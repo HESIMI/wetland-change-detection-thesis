@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Training outputs
+runs/
+checkpoints/
+logs/
+*.pt
+*.pth
+*.ckpt
+
+# Data
+data/
+raw/
+processed/
