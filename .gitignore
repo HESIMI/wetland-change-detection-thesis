@@ -23,6 +23,11 @@ logs/
 *.ckpt
 
 # Data
-data/
+data/*
+!data/README.md
 raw/
 processed/
+
+# Results
+results/*
+!results/README.md

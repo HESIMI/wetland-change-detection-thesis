@@ -1,38 +1,34 @@
-# Training
+# Training Module
 
-这部分是面向论文实验的第一版训练脚手架，目标是先把 baseline 跑通。
+本目录为当前训练代码入口，主要用于 baseline 模型训练与数据读取流程验证。
 
-## 文件
+## Files
 
 - `dataset.py`
-  - 读取 `dataset_manifest.csv`，返回双时相影像和变化标签。
+  - 读取 `dataset_manifest.csv`，返回双时相影像与变化标签
 - `models.py`
-  - 一个轻量的 `Siamese UNet` baseline。
+  - 当前 baseline 模型定义
 - `train_baseline.py`
-  - baseline 训练入口。
+  - baseline 训练脚本
 - `inspect_dataset.py`
-  - 快速检查数据加载是否正常。
+  - 数据读取检查脚本
 
-## 先检查数据
+## Usage
 
-```bash
-python D:/桌面/文献/项目/training/inspect_dataset.py
-```
-
-## 训练 baseline
+检查数据读取：
 
 ```bash
-python D:/桌面/文献/项目/training/train_baseline.py --epochs 5 --batch-size 4
+python src/wetland_cd/training/inspect_dataset.py
 ```
 
-模型和指标会保存在：
+运行 baseline：
 
-`D:/桌面/文献/项目/runs/siamese_unet`
+```bash
+python src/wetland_cd/training/train_baseline.py --epochs 5 --batch-size 4
+```
 
-## 当前定位
+实验输出建议保存到本地 `results/` 目录。
 
-这不是最终的 `Mamba-CLIP` 模型，而是论文实验的起点：
+## Scope
 
-1. 先验证数据集和训练流程可用。
-2. 先得到一个可比较的 baseline。
-3. 后续再把 `ChangeMamba / ChangeCLIP / Mamba-CLIP` 逐步接进来。
+当前版本仅包含 baseline 训练代码。后续主模型复现与改进模型实现将在此基础上继续扩展。

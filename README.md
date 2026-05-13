@@ -31,6 +31,10 @@
   - 本地与服务器端训练脚本
 - [docs](./docs)
   - 文献调研、数据集说明、论文框架与阶段进展
+- [data](./data)
+  - 本地数据目录约定
+- [results](./results)
+  - 实验输出目录约定
 
 ## 文档内容
 
@@ -44,6 +48,8 @@
   - 论文结构与技术路线
 - [docs/progress/README.md](./docs/progress/README.md)
   - 阶段进展与实验情况
+- [docs/ROADMAP.md](./docs/ROADMAP.md)
+  - 研发路线与阶段任务
 
 ## 当前进展
 
