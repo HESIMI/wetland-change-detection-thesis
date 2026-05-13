@@ -1,0 +1,77 @@
+{
+  "study_areas": [
+    {
+      "name": "hangzhou_xixi",
+      "split": "train",
+      "bbox": [120.0000, 30.1800, 120.1800, 30.3200],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "qiantang_estuary",
+      "split": "val",
+      "bbox": [120.9000, 30.2500, 121.2500, 30.5500],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "poyang_lake",
+      "split": "test",
+      "bbox": [116.0000, 28.8000, 116.4500, 29.2000],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "dongting_lake",
+      "split": "train",
+      "bbox": [112.2000, 28.7000, 113.4000, 29.5500],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "yellow_river_delta",
+      "split": "train",
+      "bbox": [118.5500, 37.3500, 119.4500, 38.2000],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "chongming_dongtan",
+      "split": "val",
+      "bbox": [121.3000, 31.3500, 122.1500, 31.9500],
+      "years": [2018, 2022]
+    }
+  ],
+  "input_root": "D:/桌面/文献/项目/data/raw",
+  "output_root": "D:/桌面/文献/项目/data/processed",
+  "wetland_codes": [180, 181, 182, 183, 184, 185, 186, 187],
+  "semantic_classes": {
+    "0": "background",
+    "10": "cropland",
+    "20": "forest",
+    "30": "shrubland",
+    "40": "grassland",
+    "50": "water",
+    "90": "wetland",
+    "100": "built_up",
+    "110": "bare_land",
+    "120": "snow_ice",
+    "130": "tidal_flat_special"
+  },
+  "semantic_rules": {
+    "10": [10, 11, 12],
+    "20": [20],
+    "30": [30],
+    "40": [40],
+    "50": [50, 51, 52, 53],
+    "90": [180, 181, 182, 183, 184, 185, 186, 187],
+    "100": [190],
+    "110": [60, 61, 62],
+    "120": [70, 71, 72],
+    "130": [210]
+  },
+  "binary_change_rules": {
+    "treat_wetland_internal_shift_as_change": false
+  },
+  "chip_size": 256,
+  "overlap": 64,
+  "min_valid_ratio": 0.8,
+  "prompt_template": "A satellite image patch showing {label}.",
+  "transition_prompt_template": "A remote sensing change patch showing {src} converted to {dst}.",
+  "nodata_value": 0
+}

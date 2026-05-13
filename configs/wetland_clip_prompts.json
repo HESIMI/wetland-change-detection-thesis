@@ -1,0 +1,44 @@
+{
+  "scene_prompts": {
+    "wetland": [
+      "A satellite image patch showing a lush wetland.",
+      "A high-resolution remote sensing image of marsh wetland.",
+      "A Sentinel-2 image patch containing fragmented wetland vegetation."
+    ],
+    "water": [
+      "A satellite image patch showing open water.",
+      "A remote sensing image of seasonal inundation water body."
+    ],
+    "built_up": [
+      "A satellite image patch showing urban buildings.",
+      "A remote sensing image of impervious built-up land."
+    ],
+    "cropland": [
+      "A satellite image patch showing cultivated cropland.",
+      "A remote sensing image of agricultural fields."
+    ],
+    "forest": [
+      "A satellite image patch showing forest vegetation.",
+      "A remote sensing image of dense tree cover."
+    ]
+  },
+  "change_prompts": {
+    "wetland_to_built_up": [
+      "A remote sensing change patch showing wetland converted to urban buildings.",
+      "A satellite image pair where wetland area is occupied by built-up land."
+    ],
+    "wetland_to_cropland": [
+      "A remote sensing change patch showing wetland converted to cropland.",
+      "A satellite image pair where marsh area becomes cultivated fields."
+    ],
+    "wetland_to_water": [
+      "A remote sensing change patch showing wetland transformed into open water."
+    ],
+    "water_to_wetland": [
+      "A remote sensing change patch showing shallow water evolving into wetland vegetation."
+    ],
+    "pseudo_change_water_level": [
+      "A satellite image pair with seasonal water level fluctuation but no permanent land cover change."
+    ]
+  }
+}
