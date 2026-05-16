@@ -205,9 +205,9 @@ def _build_hrscd_samples(root: Path, split: Split) -> list[PublicChangeSample]:
 
     t1_dir = _find_first_dir(split_base, ["im1", "image1", "images1", "A", "t1", "T1", "imgs_1"])
     t2_dir = _find_first_dir(split_base, ["im2", "image2", "images2", "B", "t2", "T2", "imgs_2"])
-    label1_dir = _find_optional_dir(split_base, ["label1", "labels1", "map1", "lcm1", "seg1", "masks_1"])
-    label2_dir = _find_optional_dir(split_base, ["label2", "labels2", "map2", "lcm2", "seg2", "masks_2"])
-    binary_dir = _find_optional_dir(split_base, ["change", "change_label", "cm", "binary", "change_masks", "mask"])
+    label1_dir = _find_optional_dir(split_base, ["label1", "labels1", "map1", "lcm1", "landcovers1", "seg1", "masks_1"])
+    label2_dir = _find_optional_dir(split_base, ["label2", "labels2", "map2", "lcm2", "landcovers2", "seg2", "masks_2"])
+    binary_dir = _find_optional_dir(split_base, ["change", "change_label", "cm", "binary", "change_masks", "mask", "labels"])
 
     required_dirs = [t1_dir, t2_dir]
     optional_dirs = [d for d in [label1_dir, label2_dir, binary_dir] if d is not None]
@@ -276,4 +276,3 @@ def _find_file(directory: Path | None, stem: str) -> Path:
         if path.exists():
             return path
     raise FileNotFoundError(f"Cannot find {stem} in {directory}")
-

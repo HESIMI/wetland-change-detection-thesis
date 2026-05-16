@@ -4,3 +4,5 @@ torch
 Pillow
 gdown
 huggingface_hub
+remotezip
+tqdm
