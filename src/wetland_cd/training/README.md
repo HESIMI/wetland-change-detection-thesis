@@ -1,34 +1,44 @@
 # Training Module
 
-本目录为当前训练代码入口，主要用于 baseline 模型训练与数据读取流程验证。
+本目录包含论文实验阶段的训练与数据读取入口，当前覆盖自建湿地变化检测数据集、SECOND 与 HRSCD-Clean。
 
 ## Files
 
-- `dataset.py`
-  - 读取 `dataset_manifest.csv`，返回双时相影像与变化标签
-- `models.py`
-  - 当前 baseline 模型定义
-- `train_baseline.py`
-  - baseline 训练脚本
-- `inspect_dataset.py`
-  - 数据读取检查脚本
+- `dataset.py`: 自建湿地弱监督变化检测数据集读取器。
+- `public_datasets.py`: SECOND 与 HRSCD-Clean 的统一读取器。
+- `inspect_dataset.py`: 自建湿地数据集读取检查脚本。
+- `inspect_public_datasets.py`: 公开数据集读取检查脚本。
+- `models.py`: 当前 baseline 模型定义。
+- `train_baseline.py`: Siamese U-Net baseline 训练入口。
+
+## Public Dataset Output Format
+
+`PublicSemanticChangeDataset` 统一返回以下字段：
+
+- `t1`: 第一时相影像，形状为 `C x H x W`。
+- `t2`: 第二时相影像，形状为 `C x H x W`。
+- `image`: 双时相拼接影像，形状为 `2C x H x W`。
+- `binary_mask`: 二值变化标签，形状为 `1 x H x W`。
+- `semantic_t1`: 第一时相语义标签，形状为 `H x W`。
+- `semantic_t2`: 第二时相语义标签，形状为 `H x W`。
 
 ## Usage
 
-检查数据读取：
+检查 SECOND：
 
 ```bash
-python src/wetland_cd/training/inspect_dataset.py
+python src/wetland_cd/training/inspect_public_datasets.py --dataset second --root D:/桌面/文献/论文/公开数据集/SECOND --split train
 ```
 
-运行 baseline：
+检查 HRSCD-Clean：
+
+```bash
+python src/wetland_cd/training/inspect_public_datasets.py --dataset hrscd --root D:/桌面/文献/论文/公开数据集/HRSCD_clean --split train
+```
+
+运行自建湿地 baseline：
 
 ```bash
 python src/wetland_cd/training/train_baseline.py --epochs 5 --batch-size 4
 ```
 
-实验输出建议保存到本地 `results/` 目录。
-
-## Scope
-
-当前版本仅包含 baseline 训练代码。后续主模型复现与改进模型实现将在此基础上继续扩展。
