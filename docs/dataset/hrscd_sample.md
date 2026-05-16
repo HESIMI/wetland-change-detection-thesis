@@ -1,6 +1,6 @@
 # HRSCD-Clean Sample Subset
 
-HRSCD-Clean 官方压缩包约 60.3 GB。为降低本机存储与训练成本，当前阶段从官方压缩包中按需抽取了一个小规模本地子集，用于数据读取验证、模型调试和论文中的补充性高分辨率实验。
+HRSCD-Clean 官方压缩包约 60.3 GB。为降低本机存储与训练成本，当前阶段从官方压缩包中按需抽取了一个本地子集，用于数据读取验证、模型调试和论文中的补充性高分辨率实验。
 
 ## Local Path
 
@@ -59,3 +59,24 @@ The unified reader returns:
 
 This subset is sufficient for local dataloader verification and lightweight model debugging. Full-scale HRSCD experiments should be run on a larger subset or the complete dataset on the server.
 
+## Thesis-Scale Sampling Target
+
+To make HRSCD comparable to SECOND in sample count, use the following target:
+
+- train: 2500 samples
+- val: 400 samples
+- test: 1600 samples
+
+Recommended workflow:
+
+1. Download the full official archive to an English path, for example `D:/datasets_public/HRSCD_clean/HRSCD_Clean.zip`.
+2. Extract a thesis-scale sampled subset from the local archive.
+
+```bash
+python scripts/data_preparation/sample_hrscd_clean.py ^
+  --archive D:/datasets_public/HRSCD_clean/HRSCD_Clean.zip ^
+  --output-root D:/桌面/文献/论文/公开数据集/HRSCD_sample_large ^
+  --train 2500 --val 400 --test 1600
+```
+
+Remote sampling without a local archive is supported, but it is slow and unstable for thousands of samples because each patch requires multiple range requests to the 60 GB ZIP file.

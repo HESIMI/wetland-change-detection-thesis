@@ -14,7 +14,7 @@ HRSCD_URL = "https://huggingface.co/datasets/EPFL-ECEO/HRSCD_clean/resolve/main/
 SUBDIRS = ["images1", "images2", "labels", "labels_map", "landcovers1", "landcovers2"]
 
 
-def list_stems(remote_zip: RemoteZip, split: str) -> list[str]:
+def list_stems(remote_zip: zipfile.ZipFile | RemoteZip, split: str) -> list[str]:
     prefix = f"HRSCD_D35/{split}/images1/"
     stems = []
     for info in remote_zip.infolist():
@@ -24,7 +24,7 @@ def list_stems(remote_zip: RemoteZip, split: str) -> list[str]:
     return sorted(stems)
 
 
-def extract_member(remote_zip: RemoteZip, member: str, output_path: Path, retries: int = 5) -> None:
+def extract_member(remote_zip: zipfile.ZipFile | RemoteZip, member: str, output_path: Path, retries: int = 5) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     for attempt in range(1, retries + 1):
         try:
@@ -41,7 +41,7 @@ def extract_member(remote_zip: RemoteZip, member: str, output_path: Path, retrie
             time.sleep(min(30, 2 * attempt))
 
 
-def sample_split(remote_zip: RemoteZip, split: str, count: int, output_root: Path, seed: int) -> list[str]:
+def sample_split(remote_zip: zipfile.ZipFile | RemoteZip, split: str, count: int, output_root: Path, seed: int) -> list[str]:
     stems = list_stems(remote_zip, split)
     rng = random.Random(f"{seed}-{split}")
     rng.shuffle(stems)
@@ -88,19 +88,28 @@ def write_manifest(output_root: Path, selected_by_split: dict[str, list[str]]) -
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Create a local sampled subset from HRSCD-Clean without downloading the full 60GB archive.")
+    parser = argparse.ArgumentParser(description="Create a sampled subset from HRSCD-Clean.")
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--train", type=int, default=1000)
-    parser.add_argument("--val", type=int, default=200)
-    parser.add_argument("--test", type=int, default=200)
+    parser.add_argument("--archive", type=Path, default=None, help="Optional local HRSCD_Clean.zip. Faster and recommended for large samples.")
+    parser.add_argument("--train", type=int, default=2500)
+    parser.add_argument("--val", type=int, default=400)
+    parser.add_argument("--test", type=int, default=1600)
     parser.add_argument("--seed", type=int, default=2026)
     args = parser.parse_args()
 
     args.output_root.mkdir(parents=True, exist_ok=True)
     selected_by_split: dict[str, list[str]] = {}
-    with RemoteZip(HRSCD_URL) as remote_zip:
+
+    if args.archive:
+        if not args.archive.exists():
+            raise FileNotFoundError(args.archive)
+        zip_context = zipfile.ZipFile(args.archive)
+    else:
+        zip_context = RemoteZip(HRSCD_URL)
+
+    with zip_context as dataset_zip:
         for split, count in [("train", args.train), ("val", args.val), ("test", args.test)]:
-            selected_by_split[split] = sample_split(remote_zip, split, count, args.output_root, args.seed)
+            selected_by_split[split] = sample_split(dataset_zip, split, count, args.output_root, args.seed)
 
     write_manifest(args.output_root, selected_by_split)
     print(args.output_root)
