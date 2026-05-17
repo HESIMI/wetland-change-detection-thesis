@@ -7,6 +7,7 @@ from typing import Callable, Literal
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -28,6 +29,15 @@ def _read_rgb(path: Path) -> np.ndarray:
 
 def _to_chw_tensor(image: np.ndarray) -> torch.Tensor:
     return torch.from_numpy(np.ascontiguousarray(image.transpose(2, 0, 1))).float()
+
+
+def _resize_chw(image: torch.Tensor, output_size: int | None, mode: str) -> torch.Tensor:
+    if output_size is None or image.shape[-2:] == (output_size, output_size):
+        return image
+    kwargs = {"mode": mode}
+    if mode in {"bilinear", "bicubic"}:
+        kwargs["align_corners"] = False
+    return F.interpolate(image.unsqueeze(0), size=(output_size, output_size), **kwargs).squeeze(0)
 
 
 def _rgb_to_ids(label: np.ndarray) -> torch.Tensor:
@@ -74,12 +84,14 @@ class PublicSemanticChangeDataset(Dataset):
         split: Split,
         image_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
         mask_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
+        output_size: int | None = None,
     ) -> None:
         self.dataset = dataset.lower()
         self.root = Path(root)
         self.split = split
         self.image_transform = image_transform or default_rgb_transform
         self.mask_transform = mask_transform or default_binary_mask_transform
+        self.output_size = output_size
 
         if self.dataset == "second":
             self.samples = _build_second_samples(self.root, split)
@@ -106,6 +118,11 @@ class PublicSemanticChangeDataset(Dataset):
         semantic_t2 = _load_semantic(sample.label2_path, t2_rgb.shape[:2])
         binary_mask = _load_binary(sample.binary_path, sample.label1_path, sample.label2_path, t1_rgb.shape[:2])
         binary_mask = self.mask_transform(binary_mask.unsqueeze(0))
+        t1 = _resize_chw(t1, self.output_size, "bilinear")
+        t2 = _resize_chw(t2, self.output_size, "bilinear")
+        binary_mask = _resize_chw(binary_mask, self.output_size, "nearest")
+        semantic_t1 = _resize_chw(semantic_t1.unsqueeze(0).float(), self.output_size, "nearest").squeeze(0).long()
+        semantic_t2 = _resize_chw(semantic_t2.unsqueeze(0).float(), self.output_size, "nearest").squeeze(0).long()
 
         return {
             "dataset": self.dataset,

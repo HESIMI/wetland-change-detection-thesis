@@ -1,0 +1,44 @@
+{
+  "experiment_name": "wetland_siamese_unet",
+  "seed": 42,
+  "data": {
+    "dataset": "wetland",
+    "manifest": "D:/桌面/毕业论文/项目/data/processed/dataset_manifest.csv",
+    "image_size": 256,
+    "include_prompt": false
+  },
+  "model": {
+    "name": "siamese_unet",
+    "params": {
+      "base_channels": 32
+    }
+  },
+  "training": {
+    "epochs": 50,
+    "batch_size": 4,
+    "num_workers": 0,
+    "pin_memory": true,
+    "drop_last": false,
+    "optimizer": "adamw",
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "scheduler": {
+      "name": "cosine",
+      "min_lr": 0.000001
+    },
+    "pos_weight": 6.0,
+    "dice_weight": 1.0,
+    "threshold": 0.5,
+    "monitor": "f1",
+    "monitor_mode": "max",
+    "device": "auto",
+    "limit_batches": {
+      "train": 0,
+      "val": 0,
+      "test": 0
+    }
+  },
+  "results": {
+    "out_dir": "runs/wetland_siamese_unet"
+  }
+}

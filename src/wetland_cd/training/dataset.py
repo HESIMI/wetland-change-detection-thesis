@@ -6,11 +6,12 @@ from typing import Callable
 import numpy as np
 import rasterio
 import torch
+import torch.nn.functional as F
 from torch.utils.data import Dataset
 
 
 def project_root() -> Path:
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parents[3]
 
 
 def _normalize_manifest_path(raw_path: str | Path) -> Path:
@@ -47,6 +48,15 @@ def default_mask_transform(mask: torch.Tensor) -> torch.Tensor:
     return mask.float()
 
 
+def _resize_chw(image: torch.Tensor, output_size: int | None, mode: str) -> torch.Tensor:
+    if output_size is None or image.shape[-2:] == (output_size, output_size):
+        return image
+    kwargs = {"mode": mode}
+    if mode in {"bilinear", "bicubic"}:
+        kwargs["align_corners"] = False
+    return F.interpolate(image.unsqueeze(0), size=(output_size, output_size), **kwargs).squeeze(0)
+
+
 class WetlandChangeDataset(Dataset):
     def __init__(
         self,
@@ -55,6 +65,7 @@ class WetlandChangeDataset(Dataset):
         image_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
         mask_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
         include_prompt: bool = False,
+        output_size: int | None = None,
     ) -> None:
         manifest_path = Path(manifest_path)
         rows = list(csv.DictReader(manifest_path.open(encoding="utf-8-sig")))
@@ -62,6 +73,7 @@ class WetlandChangeDataset(Dataset):
         self.image_transform = image_transform or default_image_transform
         self.mask_transform = mask_transform or default_mask_transform
         self.include_prompt = include_prompt
+        self.output_size = output_size
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -87,6 +99,10 @@ class WetlandChangeDataset(Dataset):
         t1 = self.image_transform(t1)
         t2 = self.image_transform(t2)
         binary_mask = self.mask_transform(binary_mask)
+        t1 = _resize_chw(t1, self.output_size, "bilinear")
+        t2 = _resize_chw(t2, self.output_size, "bilinear")
+        binary_mask = _resize_chw(binary_mask, self.output_size, "nearest")
+        semantic_mask = _resize_chw(semantic_mask.unsqueeze(0).float(), self.output_size, "nearest").squeeze(0).long()
 
         sample = {
             "sample_id": row["sample_id"],
@@ -108,8 +124,17 @@ class WetlandChangeDataset(Dataset):
         return sample
 
 
-def build_datasets(manifest_path: str | Path, include_prompt: bool = False) -> dict[str, WetlandChangeDataset]:
+def build_datasets(
+    manifest_path: str | Path,
+    include_prompt: bool = False,
+    output_size: int | None = None,
+) -> dict[str, WetlandChangeDataset]:
     return {
-        split: WetlandChangeDataset(manifest_path=manifest_path, split=split, include_prompt=include_prompt)
+        split: WetlandChangeDataset(
+            manifest_path=manifest_path,
+            split=split,
+            include_prompt=include_prompt,
+            output_size=output_size,
+        )
         for split in ["train", "val", "test"]
     }

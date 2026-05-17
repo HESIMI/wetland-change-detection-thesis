@@ -1,10 +1,12 @@
 from pathlib import Path
 
-from dataset import build_datasets
+try:
+    from .dataset import build_datasets
+except ImportError:
+    from dataset import build_datasets
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "processed" / "dataset_manifest.csv"
+DEFAULT_MANIFEST = Path("D:/桌面/毕业论文/项目/data/processed/dataset_manifest.csv")
 
 
 def main() -> None:

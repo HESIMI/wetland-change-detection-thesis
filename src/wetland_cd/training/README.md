@@ -1,44 +1,84 @@
 # Training Module
 
-本目录包含论文实验阶段的训练与数据读取入口，当前覆盖自建湿地变化检测数据集、SECOND 与 HRSCD-Clean。
+This directory is the unified experiment framework for binary wetland change detection and public benchmark validation. New models should be added to `models.py` and trained through `train.py`, rather than creating a separate repository or a separate training loop.
 
-## Files
+## Unified Items
 
-- `dataset.py`: 自建湿地弱监督变化检测数据集读取器。
-- `public_datasets.py`: SECOND 与 HRSCD-Clean 的统一读取器。
-- `inspect_dataset.py`: 自建湿地数据集读取检查脚本。
-- `inspect_public_datasets.py`: 公开数据集读取检查脚本。
-- `models.py`: 当前 baseline 模型定义。
-- `train_baseline.py`: Siamese U-Net baseline 训练入口。
+| Item | Unified Location |
+| --- | --- |
+| Data reading | `data_module.py`, `dataset.py`, `public_datasets.py` |
+| Training epochs | `configs/training/*.json -> training.epochs` |
+| Input size | `configs/training/*.json -> data.image_size` |
+| Learning rate strategy | `configs/training/*.json -> training.optimizer / training.scheduler` |
+| Metrics | `metrics.py` |
+| Loss | `losses.py` |
+| Model registry | `models.py -> MODEL_REGISTRY` |
+| Result format | `train.py -> runs/<experiment>/` |
 
-## Public Dataset Output Format
+## Result Format
 
-`PublicSemanticChangeDataset` 统一返回以下字段：
+Each run writes the same files:
 
-- `t1`: 第一时相影像，形状为 `C x H x W`。
-- `t2`: 第二时相影像，形状为 `C x H x W`。
-- `image`: 双时相拼接影像，形状为 `2C x H x W`。
-- `binary_mask`: 二值变化标签，形状为 `1 x H x W`。
-- `semantic_t1`: 第一时相语义标签，形状为 `H x W`。
-- `semantic_t2`: 第二时相语义标签，形状为 `H x W`。
-
-## Usage
-
-检查 SECOND：
-
-```bash
-python src/wetland_cd/training/inspect_public_datasets.py --dataset second --root D:/桌面/文献/论文/公开数据集/SECOND --split train
+```text
+runs/<experiment>/
+  config_resolved.json
+  history.jsonl
+  history.csv
+  metrics.json
+  checkpoints/
+    best.pt
+    last.pt
 ```
 
-检查 HRSCD-Clean：
+The final `metrics.json` always contains dataset name, model name, input size, epoch count, optimizer, scheduler, best validation epoch, train/val history, test metrics, and checkpoint paths.
 
-```bash
-python src/wetland_cd/training/inspect_public_datasets.py --dataset hrscd --root D:/桌面/文献/论文/公开数据集/HRSCD_clean --split train
+## Run Wetland Baseline
+
+```powershell
+python src/wetland_cd/training/train.py `
+  --config configs/training/wetland_siamese_unet.json
 ```
 
-运行自建湿地 baseline：
+Quick smoke test:
 
-```bash
-python src/wetland_cd/training/train_baseline.py --epochs 5 --batch-size 4
+```powershell
+python src/wetland_cd/training/train.py `
+  --config configs/training/wetland_siamese_unet.json `
+  --epochs 1 `
+  --batch-size 1 `
+  --limit-train-batches 1 `
+  --limit-val-batches 1 `
+  --limit-test-batches 1 `
+  --outdir runs/smoke_unified
 ```
 
+## Run Public Benchmarks
+
+SECOND:
+
+```powershell
+python src/wetland_cd/training/train.py `
+  --config configs/training/second_siamese_unet.json
+```
+
+HRSCD sample:
+
+```powershell
+python src/wetland_cd/training/train.py `
+  --config configs/training/hrscd_sample_siamese_unet.json
+```
+
+## Adding A Model
+
+1. Implement the model in `models.py` or import it there.
+2. Register it in `MODEL_REGISTRY`.
+3. Create a config file under `configs/training/`.
+4. Run it with `train.py`.
+
+The model forward signature should be:
+
+```python
+logits = model(t1, t2)
+```
+
+where `t1` and `t2` are tensors shaped `B x C x H x W`, and `logits` is `B x 1 x H x W`.

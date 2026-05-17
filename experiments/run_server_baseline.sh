@@ -8,8 +8,9 @@ conda activate wetland_cd
 
 cd "$PROJECT_ROOT"
 
-python "$PROJECT_ROOT/training/inspect_dataset.py"
-python "$PROJECT_ROOT/training/train_baseline.py" \
+python "$PROJECT_ROOT/src/wetland_cd/training/inspect_dataset.py"
+python "$PROJECT_ROOT/src/wetland_cd/training/train.py" \
+  --config "$PROJECT_ROOT/configs/training/wetland_siamese_unet.json" \
   --epochs 5 \
   --batch-size 4 \
   --outdir "$PROJECT_ROOT/runs/siamese_unet_server"

@@ -76,3 +76,16 @@ class SiameseUNet(nn.Module):
         x = self.dec2(x, skip2)
         x = self.dec1(x, skip1)
         return self.head(x)
+
+
+MODEL_REGISTRY = {
+    "siamese_unet": SiameseUNet,
+}
+
+
+def build_model(name: str, in_channels: int, **kwargs) -> nn.Module:
+    key = name.lower()
+    if key not in MODEL_REGISTRY:
+        available = ", ".join(sorted(MODEL_REGISTRY))
+        raise ValueError(f"Unsupported model '{name}'. Available models: {available}")
+    return MODEL_REGISTRY[key](in_channels=in_channels, **kwargs)

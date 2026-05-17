@@ -6,6 +6,7 @@
 - [x] Generate binary and semantic change labels
 - [x] Create train / val / test patch splits
 - [x] Run `Siamese UNet` baseline
+- [x] Build unified training framework for shared data loading, metrics, LR policy, and result format
 
 ## Stage 2. Candidate Model Reproduction
 
@@ -13,6 +14,7 @@
 - [ ] Reproduce `ChangeViT`
 - [ ] Reproduce `MaskCD`
 - [ ] Reproduce `ChangeCLIP`
+- [ ] Register reproduced models into the unified `train.py` framework
 
 ## Stage 3. Comparative Experiments
 
