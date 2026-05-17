@@ -14,6 +14,7 @@
 | `initial_weak_labels.md` | GLC_FCS30D 差分生成初始弱标签的说明 |
 | `esa_worldcover.md` | ESA WorldCover 2021 下载、对齐、重编码与一致性统计 |
 | `weak_label_confidence.md` | 融合 Sentinel-2 与 ESA 证据后的置信样本筛选 |
+| `data_quality_acceptance.md` | 按论文要求进行的数据质量验收与适配性评估 |
 | `data_layer_status.md` | 当前数据层产出状态和统计表 |
 | `label_construction_flow.md` | 标签构建流程图 |
 | `public_datasets.md` | SECOND、HRSCD 等公开数据集说明 |
