@@ -57,6 +57,8 @@ D:/桌面/毕业论文/项目/data/weak_labels/confidence/<area>/
 - `multi_source_consistency.tif`: 多源一致性掩码。
 - `temporal_consistency.tif`: 双时相时序一致性代理掩码。
 - `high_confidence_mask.tif`: 高置信样本掩码。
+- `high_confidence_change.tif`: 高置信变化样本掩码。
+- `high_confidence_unchanged.tif`: 高置信未变化样本掩码。
 - `low_confidence_mask.tif`: 低置信样本掩码。
 - `confidence_score.tif`: 置信等级图，`0` 表示未选中，`1` 表示低置信，`2` 表示高置信。
 
@@ -77,14 +79,14 @@ pseudo_change = 1
 
 ## Current Statistics
 
-| Area ID | Initial Change Pixels | Pseudo-change Pixels | High-confidence Pixels | Low-confidence Pixels |
-| --- | ---: | ---: | ---: | ---: |
-| `chongming_dongtan` | 569271 | 181629 | 2652026 | 1979894 |
-| `dongting_lake` | 1281122 | 446585 | 5106735 | 4212337 |
-| `hangzhou_xixi` | 38450 | 1713 | 128381 | 97537 |
-| `poyang_lake` | 433749 | 244256 | 862468 | 843036 |
-| `qiantang_estuary` | 172990 | 78356 | 554228 | 404222 |
-| `yellow_river_delta` | 1098496 | 440474 | 4945577 | 3399685 |
+| Area ID | High-confidence Change | High-confidence Unchanged | Low-confidence |
+| --- | ---: | ---: | ---: |
+| `chongming_dongtan` | 110519 | 2541507 | 1979894 |
+| `dongting_lake` | 151169 | 4955566 | 4212337 |
+| `hangzhou_xixi` | 7612 | 120769 | 97537 |
+| `poyang_lake` | 48675 | 813793 | 843036 |
+| `qiantang_estuary` | 51731 | 502497 | 404222 |
+| `yellow_river_delta` | 111364 | 4834213 | 3399685 |
 
 ## Reproduction
 
@@ -95,4 +97,3 @@ python scripts/data_preparation/build_weak_label_confidence.py ^
   --change-label-root D:/桌面/毕业论文/项目/data/change_labels ^
   --output-root D:/桌面/毕业论文/项目/data/weak_labels/confidence
 ```
-

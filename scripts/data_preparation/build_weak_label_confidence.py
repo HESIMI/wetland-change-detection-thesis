@@ -168,6 +168,8 @@ def build_area(
         "multi_source_consistency.tif": multi_source_consistency.astype(np.uint8),
         "temporal_consistency.tif": temporal_consistency.astype(np.uint8),
         "high_confidence_mask.tif": high_confidence_mask.astype(np.uint8),
+        "high_confidence_change.tif": high_confidence_change.astype(np.uint8),
+        "high_confidence_unchanged.tif": high_confidence_unchanged.astype(np.uint8),
         "low_confidence_mask.tif": low_confidence_mask.astype(np.uint8),
         "confidence_score.tif": confidence_score,
     }
@@ -230,4 +232,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
