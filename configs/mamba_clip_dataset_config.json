@@ -3,24 +3,46 @@
     {
       "name": "hangzhou_xixi",
       "split": "train",
-      "bbox": [120.0000, 30.1800, 120.1800, 30.3200],
+      "bbox": [120.0, 30.18, 120.18, 30.32],
       "years": [2018, 2022]
     },
     {
       "name": "qiantang_estuary",
       "split": "val",
-      "bbox": [120.9000, 30.2500, 121.2500, 30.5500],
+      "bbox": [120.9, 30.25, 121.25, 30.55],
       "years": [2018, 2022]
     },
     {
       "name": "poyang_lake",
       "split": "test",
-      "bbox": [116.0000, 28.8000, 116.4500, 29.2000],
+      "bbox": [116.0, 28.8, 116.45, 29.2],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "dongting_lake",
+      "split": "train",
+      "bbox": [112.2, 28.7, 113.4, 29.55],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "yellow_river_delta",
+      "split": "train",
+      "bbox": [118.55, 37.35, 119.45, 38.2],
+      "years": [2018, 2022]
+    },
+    {
+      "name": "chongming_dongtan",
+      "split": "val",
+      "bbox": [121.3, 31.35, 122.15, 31.95],
       "years": [2018, 2022]
     }
   ],
-  "input_root": "D:/桌面/文献/data/raw",
-  "output_root": "D:/桌面/文献/data/processed",
+  "input_root": "D:/桌面/毕业论文/项目/data/raw",
+  "output_root": "D:/桌面/毕业论文/项目/data/processed",
+  "initial_weak_label_root": "D:/桌面/毕业论文/项目/data/weak_labels/initial_change",
+  "confidence_label_root": "D:/桌面/毕业论文/项目/data/weak_labels/confidence",
+  "esa_worldcover_root": "D:/桌面/毕业论文/项目/data/esa_worldcover",
+  "esa_worldcover_tile_root": "D:/桌面/毕业论文/项目/data/raw_esa_worldcover/tiles",
   "wetland_codes": [180, 181, 182, 183, 184, 185, 186, 187],
   "semantic_classes": {
     "0": "background",
@@ -28,11 +50,35 @@
     "20": "forest",
     "30": "shrubland",
     "40": "grassland",
-    "50": "built_up",
-    "60": "bare_land",
-    "70": "snow_ice",
-    "80": "water",
-    "90": "wetland"
+    "50": "water",
+    "90": "wetland",
+    "100": "built_up",
+    "110": "bare_land",
+    "120": "snow_ice",
+    "130": "tidal_flat_special"
+  },
+  "semantic_rules": {
+    "10": [10, 11, 12],
+    "20": [20],
+    "30": [30],
+    "40": [40],
+    "50": [50, 51, 52, 53],
+    "90": [180, 181, 182, 183, 184, 185, 186, 187],
+    "100": [190],
+    "110": [60, 61, 62],
+    "120": [70, 71, 72],
+    "130": [210]
+  },
+  "esa_worldcover_semantic_rules": {
+    "10": [40],
+    "20": [10],
+    "30": [20],
+    "40": [30, 100],
+    "50": [80],
+    "90": [90, 95],
+    "100": [50],
+    "110": [60],
+    "120": [70]
   },
   "binary_change_rules": {
     "treat_wetland_internal_shift_as_change": false

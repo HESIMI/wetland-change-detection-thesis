@@ -91,7 +91,7 @@ D:/桌面/毕业论文/项目/data/weak_labels/confidence/<area>/
 | --- | ---: | ---: | ---: | --- |
 | `chongming_dongtan` | 46183 | 407458 | 6097369 | yes |
 | `dongting_lake` | 56855 | 1051048 | 12067369 | yes |
-| `hangzhou_xixi` | 4143 | 93533 | 201031 | yes |
+| `hangzhou_xixi` | 4126 | 93674 | 201068 | yes |
 | `poyang_lake` | 32580 | 288771 | 1813394 | yes |
 | `qiantang_estuary` | 7835 | 63618 | 1356471 | yes |
 | `yellow_river_delta` | 49998 | 1229012 | 9139286 | yes |

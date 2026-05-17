@@ -295,7 +295,7 @@ def main() -> None:
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path("D:/桌面/文献/mamba_clip_dataset_config.json"),
+        default=Path("configs/project_dataset_config.json"),
         help="Path to the dataset configuration JSON file.",
     )
     args = parser.parse_args()

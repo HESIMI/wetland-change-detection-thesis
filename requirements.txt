@@ -2,6 +2,7 @@ numpy
 rasterio
 torch
 Pillow
+pandas
 gdown
 huggingface_hub
 remotezip
