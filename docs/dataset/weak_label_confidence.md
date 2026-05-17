@@ -1,99 +1,110 @@
-# Weak Label Confidence Screening
+# 弱监督标签置信度筛选
 
-本阶段在初始弱监督变化图基础上进行标签质量筛选，目标是区分高置信样本、低置信样本和不确定区域，为后续噪声鲁棒训练与伪变化抑制提供数据基础。
+## 目标
 
-## Inputs
+当前湿地变化标签不是人工精标，而是由 GLC_FCS30D 两期土地覆盖产品差分推导得到，因此属于弱监督标签。置信度筛选的目标是把初始弱标签进一步划分为：
 
-输入数据包括：
+- 高置信变化样本
+- 高置信未变化样本
+- 低置信或不确定样本
 
-- 初始弱监督变化标签：`data/weak_labels/initial_change/<area>/initial_change.tif`
-- T1 土地覆盖图：`lc_t1_2018.tif`
-- T2 土地覆盖图：`lc_t2_2022.tif`
-- Sentinel-2 T1 影像：`data/raw/<area>/sentinel2_2018.tif`
-- Sentinel-2 T2 影像：`data/raw/<area>/sentinel2_2022.tif`
-- 伪变化候选图：`data/change_labels/<area>/pseudo_change_mask.tif`
+该步骤用于缓解土地覆盖产品分类误差、湿地季节性水位波动、潮滩/水体边界变化和破碎斑块带来的伪变化问题。
 
-## Multi-source Consistency
+## 输入数据
 
-当前多源一致性由两类证据构成：
+```text
+data/weak_labels/initial_change/<area>/
+  initial_change.tif
+  lc_t1_2018.tif
+  lc_t2_2022.tif
 
-- 土地覆盖变化证据：由 GLC_FCS30D 两期土地覆盖差分得到。
-- 光学影像变化证据：由 Sentinel-2 双时相影像计算得到。
+data/raw/<area>/
+  sentinel2_2018.tif
+  sentinel2_2022.tif
 
-Sentinel-2 光谱变化证据基于 NDVI、NDWI 与亮度差异构建：
+data/change_labels/<area>/
+  pseudo_change_mask.tif
+
+data/esa_worldcover/<area>/
+  esa_worldcover_2021_semantic.tif
+  esa_glc_any_consistency.tif
+```
+
+其中 ESA WorldCover 为可选输入。若未提供 `--esa-root`，脚本仍按 GLC_FCS30D + Sentinel-2 光谱变化证据运行；若提供 ESA 结果，则将 ESA-GLC 一致性作为额外多源证据。
+
+## 筛选逻辑
+
+Sentinel-2 双时相影像用于计算光谱变化强度：
 
 ```text
 spectral_change = sqrt(delta_NDVI^2 + delta_NDWI^2 + delta_brightness^2)
 ```
 
-其中 Sentinel-2 波段顺序为：
+GLC_FCS30D 差分提供初始变化/未变化判断，Sentinel-2 提供同季节光谱变化证据，ESA WorldCover 2021 提供独立土地覆盖产品的一致性证据。
+
+高置信变化样本定义为：
 
 ```text
-B02, B03, B04, B08
+initial_change = 1
+spectral_change = high
+pseudo_change = 0
+ESA 与 GLC_T1 或 GLC_T2 至少一期语义一致
 ```
 
-光谱变化得分会被重采样到土地覆盖标签网格，并进行鲁棒归一化。若土地覆盖变化与较强光谱变化一致，或土地覆盖未变化与较弱光谱变化一致，则认为该像素具有多源一致性。
+高置信未变化样本定义为：
 
-## Temporal Consistency
+```text
+initial_change = 0
+spectral_change = low
+ESA 与 GLC_T1 或 GLC_T2 至少一期语义一致
+```
 
-当前数据为 2018 与 2022 双时相设置，尚未引入第三时相。因此本阶段采用双时相同季节光谱稳定性作为时序一致性的代理指标：
+低置信样本包括：
 
-- 土地覆盖发生变化，且 Sentinel-2 光谱变化显著，同时不属于伪变化候选，则判定为时序一致变化。
-- 土地覆盖未变化，且 Sentinel-2 光谱变化较弱，则判定为时序一致未变化。
+```text
+pseudo_change = 1
+或 initial_change = 1 但 spectral_change = low
+或 initial_change = 0 但 spectral_change = high
+或 ESA 有效但与 GLC_T1/GLC_T2 均不一致
+```
 
-后续若补充第三时相或 Dynamic World 时间序列，可将该模块扩展为真正的多时相稳定性筛选。
-
-## Confidence Masks
-
-输出目录：
+## 输出文件
 
 ```text
 D:/桌面/毕业论文/项目/data/weak_labels/confidence/<area>/
 ```
 
-输出文件：
+| File | Description |
+| --- | --- |
+| `spectral_change_score.tif` | Sentinel-2 光谱变化得分，缩放至 `0-10000` |
+| `multi_source_consistency.tif` | GLC、Sentinel-2 与 ESA 融合后的一致性掩码 |
+| `temporal_consistency.tif` | 双时相同季节光谱稳定性/变化代理指标 |
+| `high_confidence_mask.tif` | 高置信样本总掩码 |
+| `high_confidence_change.tif` | 高置信变化样本 |
+| `high_confidence_unchanged.tif` | 高置信未变化样本 |
+| `low_confidence_mask.tif` | 低置信或不确定样本 |
+| `confidence_score.tif` | 置信等级图，`0` 未选中，`1` 低置信，`2` 高置信 |
 
-- `spectral_change_score.tif`: Sentinel-2 光谱变化得分，范围缩放为 `0-10000`。
-- `multi_source_consistency.tif`: 多源一致性掩码。
-- `temporal_consistency.tif`: 双时相时序一致性代理掩码。
-- `high_confidence_mask.tif`: 高置信样本掩码。
-- `high_confidence_change.tif`: 高置信变化样本掩码。
-- `high_confidence_unchanged.tif`: 高置信未变化样本掩码。
-- `low_confidence_mask.tif`: 低置信样本掩码。
-- `confidence_score.tif`: 置信等级图，`0` 表示未选中，`1` 表示低置信，`2` 表示高置信。
+## 当前统计
 
-高置信样本定义：
+| Area ID | High-confidence Change | High-confidence Unchanged | Low-confidence | ESA Used |
+| --- | ---: | ---: | ---: | --- |
+| `chongming_dongtan` | 46183 | 407458 | 6097369 | yes |
+| `dongting_lake` | 56855 | 1051048 | 12067369 | yes |
+| `hangzhou_xixi` | 4143 | 93533 | 201031 | yes |
+| `poyang_lake` | 32580 | 288771 | 1813394 | yes |
+| `qiantang_estuary` | 7835 | 63618 | 1356471 | yes |
+| `yellow_river_delta` | 49998 | 1229012 | 9139286 | yes |
 
-```text
-变化样本：initial_change = 1, spectral_change high, pseudo_change = 0
-未变化样本：initial_change = 0, spectral_change low
-```
+ESA 融合后，高置信样本更保守，低置信区域显著增加。该结果符合当前论文设定：弱标签更适合通过置信样本筛选、噪声鲁棒训练或样本加权使用，而不应被直接视为人工精标。
 
-低置信样本定义：
+## 复现命令
 
-```text
-pseudo_change = 1
-或 initial_change = 1 但 spectral_change low
-或 initial_change = 0 但 spectral_change high
-```
-
-## Current Statistics
-
-| Area ID | High-confidence Change | High-confidence Unchanged | Low-confidence |
-| --- | ---: | ---: | ---: |
-| `chongming_dongtan` | 110519 | 2541507 | 1979894 |
-| `dongting_lake` | 151169 | 4955566 | 4212337 |
-| `hangzhou_xixi` | 7612 | 120769 | 97537 |
-| `poyang_lake` | 48675 | 813793 | 843036 |
-| `qiantang_estuary` | 51731 | 502497 | 404222 |
-| `yellow_river_delta` | 111364 | 4834213 | 3399685 |
-
-## Reproduction
-
-```bash
-python scripts/data_preparation/build_weak_label_confidence.py ^
-  --initial-root D:/桌面/毕业论文/项目/data/weak_labels/initial_change ^
-  --raw-root D:/桌面/毕业论文/项目/data/raw ^
-  --change-label-root D:/桌面/毕业论文/项目/data/change_labels ^
-  --output-root D:/桌面/毕业论文/项目/data/weak_labels/confidence
+```powershell
+python scripts/data_preparation/build_weak_label_confidence.py `
+  --initial-root D:/桌面/毕业论文/项目/data/weak_labels/initial_change `
+  --raw-root D:/桌面/毕业论文/项目/data/raw `
+  --change-label-root D:/桌面/毕业论文/项目/data/change_labels `
+  --output-root D:/桌面/毕业论文/项目/data/weak_labels/confidence `
+  --esa-root D:/桌面/毕业论文/项目/data/esa_worldcover
 ```

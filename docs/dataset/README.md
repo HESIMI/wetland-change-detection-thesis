@@ -1,140 +1,37 @@
 # 数据集与预处理说明
 
-## 1. 数据目标
+本目录记录硕士论文湿地弱监督变化检测实验的数据层建设情况。当前数据层重点服务三个问题：
 
-本课题的数据准备不是简单的“下载与裁剪”，而是面向湿地变化检测模型设计的数据构建，核心包括：
+- 土地覆盖产品差分推导标签不精确，需明确弱监督属性。
+- 湿地季节性、水位波动、潮滩边界造成伪变化，需进行置信样本筛选。
+- 复杂边界和破碎斑块识别困难，需保留语义变化和跨区域验证设置。
 
-- 双时相遥感影像配对
-- 湿地变化标签构建
-- 语义变化编码生成
-- 面向模型训练的 patch 切片
+## 主要文档
 
-## 2. 数据来源
+| File | Description |
+| --- | --- |
+| `wetland_data_sources.md` | 自建湿地数据源、研究区和目录结构 |
+| `initial_weak_labels.md` | GLC_FCS30D 差分生成初始弱标签的说明 |
+| `esa_worldcover.md` | ESA WorldCover 2021 下载、对齐、重编码与一致性统计 |
+| `weak_label_confidence.md` | 融合 Sentinel-2 与 ESA 证据后的置信样本筛选 |
+| `data_layer_status.md` | 当前数据层产出状态和统计表 |
+| `label_construction_flow.md` | 标签构建流程图 |
+| `public_datasets.md` | SECOND、HRSCD 等公开数据集说明 |
 
-### 2.1 土地覆盖标签
+## 当前数据规模
 
-- 数据集：`GLC_FCS30D`
-- 类型：年度土地覆盖像素级分类产品
-- 用途：作为 `2018` 与 `2022` 两个时相的土地覆盖参考图，用于自动构建变化标签
+| Split | Patch Count | Area Coverage |
+| --- | ---: | --- |
+| train | 2762 | `hangzhou_xixi`, `dongting_lake`, `yellow_river_delta` |
+| val | 1036 | `qiantang_estuary`, `chongming_dongtan` |
+| test | 427 | `poyang_lake` |
 
-### 2.2 遥感影像
+## 当前辅助数据
 
-- 数据集：`Sentinel-2 L2A`
-- 来源：Microsoft Planetary Computer 平台公开数据
-- 时间范围：生长季 `4-10 月`
-- 处理方式：筛选低云量影像后生成双时相合成图
+| Product | Role |
+| --- | --- |
+| Sentinel-2 2018/2022 | 双时相遥感影像与光谱变化证据 |
+| GLC_FCS30D 2018/2022 | 初始弱监督变化标签来源 |
+| ESA WorldCover 2021 | 多源一致性验证与置信度筛选辅助证据 |
 
-## 3. 研究区域
-
-当前已构建 6 个典型湿地区域：
-
-1. `hangzhou_xixi`
-2. `qiantang_estuary`
-3. `poyang_lake`
-4. `dongting_lake`
-5. `yellow_river_delta`
-6. `chongming_dongtan`
-
-这些区域覆盖：
-
-- 内陆湖泊湿地
-- 河口湿地
-- 滨海湿地
-- 城市近郊湿地
-
-有助于后续验证跨区域泛化能力。
-
-## 4. 标签构建流程
-
-### 4.1 原始年度标签提取
-
-从 `GLC_FCS30D` 原始年度瓦片中提取：
-
-- `2018`
-- `2022`
-
-并裁剪到各研究区范围。
-
-### 4.2 二值变化标签
-
-通过逐像素比较 `2018` 与 `2022` 的类别差异，生成：
-
-- 原始变化图 `binary_change_raw`
-- 最终变化图 `binary_change_final`
-
-### 4.3 伪变化掩码
-
-考虑到湿地场景中存在明显的季节性和水位波动，本项目额外构建：
-
-- `pseudo_change_mask`
-
-用于标记 `水体 ↔ 湿地`、`湿地 ↔ 潮滩` 等更可能由自然波动引起的变化候选区域。
-
-### 4.4 语义变化标签
-
-除二值变化外，还保留语义变化编码：
-
-- `semantic_change = source_class * 1000 + target_class`
-
-便于后续引入：
-
-- 文本提示词
-- 语义对齐损失
-- 语义变化检测扩展实验
-
-## 5. 数据切片与样本规模
-
-为了适配深度学习训练，将大幅面图像切片为固定大小 patch，形成训练样本集。
-
-当前已生成样本总数：
-
-- 总样本数：`4225`
-- 训练集：`2762`
-- 验证集：`1036`
-- 测试集：`427`
-
-按区域统计如下：
-
-| 区域 | patch 数 |
-| --- | ---: |
-| `dongting_lake` | 2492 |
-| `chongming_dongtan` | 856 |
-| `poyang_lake` | 427 |
-| `yellow_river_delta` | 189 |
-| `qiantang_estuary` | 180 |
-| `hangzhou_xixi` | 81 |
-
-## 6. 变化标签统计特征
-
-当前多区域变化统计显示：
-
-- `poyang_lake`、`qiantang_estuary`、`chongming_dongtan` 等区域中伪变化比例较高
-- 这为“语义引导抑制误检”提供了明确实验动机
-
-示例：
-
-- `hangzhou_xixi`
-  - raw changed pixels: `38479`
-  - final changed pixels: `36766`
-  - pseudo change pixels: `1713`
-
-- `qiantang_estuary`
-  - raw changed pixels: `172990`
-  - final changed pixels: `94634`
-  - pseudo change pixels: `78356`
-
-- `poyang_lake`
-  - raw changed pixels: `433749`
-  - final changed pixels: `189493`
-  - pseudo change pixels: `244256`
-
-## 7. 当前数据阶段结论
-
-当前数据集已经满足以下要求：
-
-- 可支撑 baseline 训练
-- 可支撑跨区域泛化实验
-- 可支撑语义引导类模型设计
-- 可支撑后续主模型筛选实验
-
-因此，当前论文已具备从“数据准备阶段”进入“模型筛选与主实验阶段”的基础。
+后续若需要更扎实的时序一致性分析，可继续加入 Dynamic World 或更多年份影像/土地覆盖产品。

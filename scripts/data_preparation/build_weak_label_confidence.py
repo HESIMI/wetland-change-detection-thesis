@@ -88,11 +88,22 @@ def find_pseudo_mask(change_label_root: Path, area: str, shape: tuple[int, int])
     return np.zeros(shape, dtype=np.uint8)
 
 
+def read_optional_mask(path: Path, shape: tuple[int, int]) -> np.ndarray | None:
+    if not path.exists():
+        return None
+    with rasterio.open(path) as src:
+        mask = src.read(1)
+    if mask.shape != shape:
+        raise ValueError(f"Shape mismatch for {path}: {mask.shape} vs {shape}")
+    return mask
+
+
 def build_area(
     area_dir: Path,
     raw_root: Path,
     change_label_root: Path,
     output_root: Path,
+    esa_root: Path | None,
     spectral_high_quantile: float,
     spectral_low_quantile: float,
 ) -> dict:
@@ -137,11 +148,30 @@ def build_area(
 
     landcover_change = initial_change & valid_mask
     landcover_unchanged = (~initial_change) & valid_mask
-
-    multi_source_consistency = (
+    spectral_consistency = (
         (landcover_change & spectral_high)
         | (landcover_unchanged & spectral_low)
     )
+
+    esa_available = False
+    esa_any_consistency = np.ones(initial_change.shape, dtype=bool)
+    esa_no_support = np.zeros(initial_change.shape, dtype=bool)
+    esa_consistent_pixels = 0
+    esa_unsupported_pixels = 0
+
+    if esa_root is not None:
+        esa_area_dir = esa_root / area
+        esa_any = read_optional_mask(esa_area_dir / "esa_glc_any_consistency.tif", initial_change.shape)
+        esa_semantic = read_optional_mask(esa_area_dir / "esa_worldcover_2021_semantic.tif", initial_change.shape)
+        if esa_any is not None and esa_semantic is not None:
+            esa_available = True
+            esa_valid = (esa_semantic != 0) & valid_mask
+            esa_any_consistency = (esa_any > 0) & valid_mask
+            esa_no_support = esa_valid & (~esa_any_consistency)
+            esa_consistent_pixels = int(esa_any_consistency.sum())
+            esa_unsupported_pixels = int(esa_no_support.sum())
+
+    multi_source_consistency = spectral_consistency & esa_any_consistency
 
     # With two available years, this is a temporal proxy based on same-season spectral stability/change evidence.
     temporal_consistency = (
@@ -149,14 +179,15 @@ def build_area(
         | (landcover_unchanged & spectral_low)
     )
 
-    high_confidence_change = landcover_change & (~pseudo_change) & spectral_high
-    high_confidence_unchanged = landcover_unchanged & spectral_low
+    high_confidence_change = landcover_change & (~pseudo_change) & spectral_high & esa_any_consistency
+    high_confidence_unchanged = landcover_unchanged & spectral_low & esa_any_consistency
     high_confidence_mask = high_confidence_change | high_confidence_unchanged
 
     low_confidence_mask = (
         pseudo_change
         | (landcover_change & spectral_low)
         | (landcover_unchanged & spectral_high)
+        | esa_no_support
     ) & valid_mask
 
     confidence_score = np.zeros(initial_change.shape, dtype=np.uint8)
@@ -182,6 +213,9 @@ def build_area(
         "valid_pixels": valid_pixels,
         "initial_change_pixels": int(landcover_change.sum()),
         "pseudo_change_pixels": int((pseudo_change & valid_mask).sum()),
+        "esa_available": esa_available,
+        "esa_consistent_pixels": esa_consistent_pixels,
+        "esa_unsupported_pixels": esa_unsupported_pixels,
         "spectral_low_threshold": low_threshold,
         "spectral_high_threshold": high_threshold,
         "multi_source_consistent_pixels": int(multi_source_consistency.sum()),
@@ -201,6 +235,7 @@ def main() -> None:
     parser.add_argument("--raw-root", type=Path, required=True)
     parser.add_argument("--change-label-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--esa-root", type=Path, default=None, help="Optional ESA WorldCover consistency root.")
     parser.add_argument("--spectral-high-quantile", type=float, default=0.75)
     parser.add_argument("--spectral-low-quantile", type=float, default=0.40)
     args = parser.parse_args()
@@ -213,6 +248,7 @@ def main() -> None:
             raw_root=args.raw_root,
             change_label_root=args.change_label_root,
             output_root=args.output_root,
+            esa_root=args.esa_root,
             spectral_high_quantile=args.spectral_high_quantile,
             spectral_low_quantile=args.spectral_low_quantile,
         )

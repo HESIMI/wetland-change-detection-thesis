@@ -1,8 +1,12 @@
-# Wetland Data Sources
+# 湿地数据源说明
 
-本文自建湿地弱监督变化检测数据集以 Sentinel-2 双时相影像和 GLC_FCS30D 年度土地覆盖产品为基础，当前已覆盖 6 个典型湿地区域，并完成原始数据整理、变化标签构建与 patch 切片。
+## 数据目标
 
-## Study Areas
+自建湿地弱监督变化检测数据集以 Sentinel-2 双时相影像、GLC_FCS30D 年度土地覆盖产品和 ESA WorldCover 2021 独立土地覆盖产品为核心数据源。GLC_FCS30D 用于推导初始弱监督变化标签，ESA WorldCover 用于多源一致性验证和置信度筛选。
+
+需要在论文中明确：当前湿地标签不是人工精标，而是土地覆盖产品差分推导标签，属于弱监督标签。
+
+## 研究区
 
 | Area ID | 中文名称 | 湿地类型 | 实验定位 |
 | --- | --- | --- | --- |
@@ -13,62 +17,51 @@
 | `yellow_river_delta` | 黄河三角洲 | 滨海湿地 / 三角洲湿地 | 滨海湿地与土地开发变化分析 |
 | `chongming_dongtan` | 崇明东滩 | 滨海湿地 / 滩涂湿地 | 河口滩涂与滨海湿地样本补充 |
 
-当前区域组合覆盖湖泊湿地、河口湿地、城市湿地、滨海湿地和滩涂湿地，满足开题阶段 3 到 6 个研究区的设计要求。
+## 影像与土地覆盖产品
 
-## Image List
+每个研究区当前包含 2018 与 2022 两个时相：
 
-每个研究区当前均包含 2018 年与 2022 年两个时相：
+| Area ID | Sentinel-2 T1 | Sentinel-2 T2 | GLC_FCS30D T1 | GLC_FCS30D T2 | ESA WorldCover |
+| --- | --- | --- | --- | --- | --- |
+| `hangzhou_xixi` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` | `esa_worldcover_2021_semantic.tif` |
+| `qiantang_estuary` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` | `esa_worldcover_2021_semantic.tif` |
+| `poyang_lake` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` | `esa_worldcover_2021_semantic.tif` |
+| `dongting_lake` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` | `esa_worldcover_2021_semantic.tif` |
+| `yellow_river_delta` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` | `esa_worldcover_2021_semantic.tif` |
+| `chongming_dongtan` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` | `esa_worldcover_2021_semantic.tif` |
 
-| Area ID | Sentinel-2 T1 | Sentinel-2 T2 | GLC_FCS30D T1 | GLC_FCS30D T2 |
-| --- | --- | --- | --- | --- |
-| `hangzhou_xixi` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` |
-| `qiantang_estuary` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` |
-| `poyang_lake` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` |
-| `dongting_lake` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` |
-| `yellow_river_delta` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` |
-| `chongming_dongtan` | `sentinel2_2018.tif` | `sentinel2_2022.tif` | `glc_2018.tif` | `glc_2022.tif` |
-
-Sentinel-2 影像采用生长季低云量影像合成结果，GLC_FCS30D 标签从年度土地覆盖瓦片中裁剪得到。当前数据为双时相设置，后续若需要强化时序一致性筛选，可继续补充中间年份或第三时相影像。
-
-## GLC_FCS30D Tiles
-
-本地已下载以下年度土地覆盖瓦片：
-
-| File | 用途 |
-| --- | --- |
-| `GLC_FCS30D_20002022_E120N35_Annual.tif` | 杭州西溪湿地、钱塘江口、崇明东滩相关区域 |
-| `GLC_FCS30D_20002022_E115N30_Annual.tif` | 鄱阳湖相关区域 |
-| `GLC_FCS30D_20002022_E110N30_Annual.tif` | 洞庭湖相关区域 |
-| `GLC_FCS30D_20002022_E115N40_Annual.tif` | 黄河三角洲相关区域 |
-
-## Current Folder Structure
-
-本地湿地数据主目录：
+## 本地目录结构
 
 ```text
 D:/桌面/毕业论文/项目/data/
   raw_glc_fcs30d/
     GLC_FCS30D_20002022_*.tif
+  raw_esa_worldcover/
+    tiles/
+      ESA_WorldCover_10m_2021_v200_*.tif
   raw/
     <area>/
       sentinel2_2018.tif
       sentinel2_2022.tif
       glc_2018.tif
       glc_2022.tif
-  glc_subsets/
+  esa_worldcover/
     <area>/
-      glc_2018.tif
-      glc_2022.tif
+      esa_worldcover_2021_raw_aligned.tif
+      esa_worldcover_2021_semantic.tif
+      esa_glc_t1_consistency.tif
+      esa_glc_t2_consistency.tif
+      esa_glc_any_consistency.tif
+      esa_consistency_score.tif
   change_labels/
     <area>/
       binary_change_raw.tif
       binary_change_final.tif
       pseudo_change_mask.tif
       semantic_change.tif
-      glc_2018_semantic.tif
-      glc_2022_semantic.tif
-      wetland_mask_2018.tif
-      wetland_mask_2022.tif
+  weak_labels/
+    initial_change/
+    confidence/
   processed/
     train/
     val/
@@ -76,7 +69,7 @@ D:/桌面/毕业论文/项目/data/
     dataset_manifest.csv
 ```
 
-## Processed Patch Statistics
+## 处理后切片统计
 
 | Split | Patch Count |
 | --- | ---: |
@@ -93,12 +86,12 @@ D:/桌面/毕业论文/项目/data/
 | `qiantang_estuary` | 180 |
 | `hangzhou_xixi` | 81 |
 
-## Optional Auxiliary Products
+## 数据层结论
 
-ESA WorldCover 与 Dynamic World 尚未纳入当前本地数据目录。两者适合作为后续弱监督标签置信度筛选的辅助来源：
+当前数据层已经具备三个层次的监督信息：
 
-- ESA WorldCover: 可用于与 GLC_FCS30D 进行多源一致性检查。
-- Dynamic World: 可用于时间序列一致性分析与高低置信样本划分。
+- GLC_FCS30D 差分生成的初始弱监督变化标签。
+- Sentinel-2 双时相光谱变化证据，用于筛除光谱不支持的疑似变化。
+- ESA WorldCover 2021 多源一致性证据，用于进一步标记高置信样本和低置信区域。
 
-当前阶段已经完成基于 Sentinel-2 与 GLC_FCS30D 的基础湿地数据源构建。辅助产品属于下一阶段弱监督标签质量提升内容。
-
+这为后续开展噪声鲁棒训练、样本加权、伪变化抑制和跨区域泛化实验提供了数据基础。若后续继续增强时序一致性，建议补充 Dynamic World 或更多年份土地覆盖/遥感影像产品。
