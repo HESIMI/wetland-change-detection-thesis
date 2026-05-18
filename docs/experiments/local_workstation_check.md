@@ -10,11 +10,12 @@
 
 | Item | Status | Evidence |
 | --- | --- | --- |
-| 数据读取检查 | Passed | 湿地 train/val/test 可读取；SECOND train 2553；HRSCD sample train 30 |
+| 数据读取检查 | Passed | 湿地 train/val/test 可读取；SECOND train 2553；HRSCD balanced sample train 220 |
 | 单 batch smoke test | Passed | `runs/local_checks/wetland_single_batch_smoke`、`runs/local_checks/second_single_batch_smoke` |
 | 代码是否能跑通 | Passed | 训练核心模块与实验脚本 `py_compile` 通过 |
 | 可视化脚本调试 | Passed | 已生成训练曲线和预测可视化 PNG |
 | 小 epoch 试训 | Passed | `runs/local_checks/hrscd_sample_2epoch_trial` 完成 2 epoch |
+| HRSCD balanced smoke test | Passed | `runs/local_checks/hrscd_balanced_single_batch_smoke` 完成 1 个 train/val/test batch |
 | 文档、表格、结果汇总 | Passed | `docs/experiments/local_check_results.csv` 与本文件 |
 
 ## 已运行命令
@@ -24,7 +25,7 @@
 ```powershell
 python src/wetland_cd/training/inspect_dataset.py
 python src/wetland_cd/training/inspect_public_datasets.py --dataset second --root D:/桌面/文献/论文/公开数据集/SECOND --split train --batch-size 1
-python src/wetland_cd/training/inspect_public_datasets.py --dataset hrscd --root D:/桌面/文献/论文/公开数据集/HRSCD_sample --split train --batch-size 1
+python src/wetland_cd/training/inspect_public_datasets.py --dataset hrscd --root D:/桌面/文献/论文/公开数据集/HRSCD_sample_balanced --split train --batch-size 1
 ```
 
 单 batch smoke test：
@@ -38,6 +39,7 @@ python src/wetland_cd/training/train.py --config configs/training/second_siamese
 
 ```powershell
 python src/wetland_cd/training/train.py --config configs/training/hrscd_sample_siamese_unet.json --epochs 2 --batch-size 4 --outdir runs/local_checks/hrscd_sample_2epoch_trial
+python src/wetland_cd/training/train.py --config configs/training/hrscd_sample_siamese_unet.json --epochs 1 --batch-size 4 --limit-train-batches 1 --limit-val-batches 1 --limit-test-batches 1 --outdir runs/local_checks/hrscd_balanced_single_batch_smoke
 ```
 
 训练曲线与可视化：
@@ -58,12 +60,13 @@ python scripts/experiments/summarize_runs.py --runs-root runs/local_checks --out
 | `wetland_single_batch_smoke` | wetland | Siamese U-Net | 1 | 0.0019 | 0.1267 | 0.0677 | 本机湿地数据 smoke test |
 | `second_single_batch_smoke` | SECOND | Siamese U-Net | 1 | 0.0000 | 0.0000 | 0.0000 | SECOND 单 batch 流程测试 |
 | `hrscd_sample_2epoch_trial` | HRSCD sample | Siamese U-Net | 2 | 0.0000 | 0.0000 | 0.0000 | 小 epoch 试训与曲线脚本调试 |
+| `hrscd_balanced_single_batch_smoke` | HRSCD balanced sample | Siamese U-Net | 1 | 0.0000 | 0.0000 | 0.0000 | 新均衡样本单 batch smoke test |
 
 这些数值不是论文正式指标，只表示本机流程可运行。SECOND 和 HRSCD sample 的本机短训指标不具备模型比较意义。
 
 ## 重要观察
 
-- HRSCD sample 当前 val/test 中变化像元极少或为空，适合流程调试，但不适合直接作为正式论文指标来源。
+- HRSCD balanced sample 已替换旧的小样本，当前 train/val/test 均含约 50% 变化 patch；适合本机迁移调试，但仍不等同于完整 HRSCD 正式 benchmark。
 - SECOND 数据读取和单 batch 训练已经跑通，适合作为服务器正式 baseline 的第一站。
 - 湿地数据读取、单 batch 训练和预测可视化已经跑通，后续可在服务器完成迁移训练。
 - 当前可视化脚本可以输出 T1、T2、GT、Prediction 和 Overlay，对后续 qualitative figures 有用。
@@ -85,5 +88,5 @@ python scripts/experiments/summarize_runs.py --runs-root runs/local_checks --out
 
 1. SECOND 上跑完整 `Siamese U-Net` baseline。
 2. SECOND 上加入两个强 baseline，例如 `ChangeViT` 和 `ChangeMamba`。
-3. 将表现稳定的模型迁移到 HRSCD sample 或扩大版 HRSCD。
+3. 将表现稳定的模型迁移到 HRSCD balanced sample；服务器阶段再扩大到官方 split 或完整 HRSCD。
 4. 将候选主干迁移到湿地弱监督数据，重点分析高低置信样本和伪变化区域。

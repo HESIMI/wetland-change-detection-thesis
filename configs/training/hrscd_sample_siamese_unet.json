@@ -3,7 +3,7 @@
   "seed": 42,
   "data": {
     "dataset": "hrscd",
-    "root": "D:/桌面/文献/论文/公开数据集/HRSCD_sample",
+    "root": "D:/桌面/文献/论文/公开数据集/HRSCD_sample_balanced",
     "image_size": 256
   },
   "model": {

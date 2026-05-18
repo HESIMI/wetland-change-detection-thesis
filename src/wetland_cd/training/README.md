@@ -61,7 +61,7 @@ python src/wetland_cd/training/train.py `
   --config configs/training/second_siamese_unet.json
 ```
 
-HRSCD sample:
+HRSCD balanced sample:
 
 ```powershell
 python src/wetland_cd/training/train.py `

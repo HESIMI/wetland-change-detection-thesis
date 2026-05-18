@@ -2,3 +2,4 @@ run,dataset,model,epochs,best_val_f1,test_f1,test_iou,test_precision,test_recall
 wetland_single_batch_smoke,wetland,siamese_unet,1,0.0019,0.1267,0.0677,0.0677,1.0000,本机湿地数据 smoke test
 second_single_batch_smoke,second,siamese_unet,1,0.0000,0.0000,0.0000,0.0000,0.0000,SECOND 单 batch 流程测试
 hrscd_sample_2epoch_trial,hrscd,siamese_unet,2,0.0000,0.0000,0.0000,0.0000,0.0000,HRSCD sample 小 epoch 试训
+hrscd_balanced_single_batch_smoke,hrscd,siamese_unet,1,0.0000,0.0000,0.0000,0.0000,0.0000,HRSCD balanced sample 单 batch smoke test
