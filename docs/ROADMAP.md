@@ -10,6 +10,7 @@
 
 ## Stage 2. Candidate Model Reproduction
 
+- [x] Complete local workstation smoke tests, visualization debugging, and result-table workflow
 - [ ] Reproduce `ChangeMamba`
 - [ ] Reproduce `ChangeViT`
 - [ ] Reproduce `MaskCD`

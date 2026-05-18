@@ -5,13 +5,6 @@ from typing import Any
 
 from torch.utils.data import DataLoader
 
-try:
-    from .dataset import WetlandChangeDataset
-    from .public_datasets import PublicSemanticChangeDataset
-except ImportError:
-    from dataset import WetlandChangeDataset
-    from public_datasets import PublicSemanticChangeDataset
-
 
 SPLITS = ["train", "val", "test"]
 
@@ -33,6 +26,11 @@ def build_datasets_from_config(config: dict[str, Any]) -> dict[str, object]:
     image_size = data_cfg.get("image_size")
 
     if dataset_name == "wetland":
+        try:
+            from .dataset import WetlandChangeDataset
+        except ImportError:
+            from dataset import WetlandChangeDataset
+
         manifest = resolve_path(data_cfg["manifest"])
         return {
             split: WetlandChangeDataset(
@@ -45,6 +43,11 @@ def build_datasets_from_config(config: dict[str, Any]) -> dict[str, object]:
         }
 
     if dataset_name in {"second", "hrscd"}:
+        try:
+            from .public_datasets import PublicSemanticChangeDataset
+        except ImportError:
+            from public_datasets import PublicSemanticChangeDataset
+
         root = resolve_path(data_cfg["root"])
         return {
             split: PublicSemanticChangeDataset(
