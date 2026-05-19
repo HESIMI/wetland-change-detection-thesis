@@ -68,6 +68,13 @@ python src/wetland_cd/training/train.py `
   --config configs/training/hrscd_sample_siamese_unet.json
 ```
 
+ChangeFormer baseline on SECOND:
+
+```powershell
+python src/wetland_cd/training/train.py `
+  --config configs/training/second_changeformer.json
+```
+
 ## Adding A Model
 
 1. Implement the model in `models.py` or import it there.
