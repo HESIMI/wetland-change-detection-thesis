@@ -1,107 +1,111 @@
-# 项目进展
+﻿# 项目进展
 
-## 1. 已完成工作
+## 当前方向
 
-### 1.1 数据准备
+当前论文方向为：
 
-- 下载并整理 `GLC_FCS30D` 年度土地覆盖数据
-- 获取 `Sentinel-2` 双时相合成影像
-- 建立 6 个典型湿地区域实验范围
-- 构建：
-  - 二值变化标签
-  - 伪变化掩码
-  - 语义变化编码图
-- 完成 patch 切片，形成训练集、验证集和测试集
+> 面向弱监督标签与伪变化抑制的湿地遥感变化检测方法研究
 
-### 1.2 模型训练基础设施
+研究重点已经从单一模型融合方案，调整为围绕数据噪声、伪变化、复杂边界和跨区域泛化的完整实验链条。
 
-- 跑通 `Siamese UNet` baseline
-- 建立本地 GPU 调试流程
-- 完成服务器端训练环境部署
-- 安装 `PyTorch + CUDA` 与遥感处理依赖
+## 已完成工作
 
-### 1.3 文献调研
+### 数据层
 
-- 完成近几年遥感变化检测前沿模型系统梳理
-- 区分：
-  - `Mamba / SSM`
-  - `Transformer / ViT`
-  - `Mask / 对象级解码`
-  - `CLIP / Vision-Language`
-  - `Foundation Model Adaptation`
-- 单独筛出**有开源代码**的优先复现清单
+- 完成 6 个湿地研究区设计：
+  - `hangzhou_xixi`
+  - `qiantang_estuary`
+  - `poyang_lake`
+  - `dongting_lake`
+  - `yellow_river_delta`
+  - `chongming_dongtan`
+- 完成 Sentinel-2 2018/2022 双时相数据整理。
+- 完成 GLC_FCS30D 2018/2022 土地覆盖数据读取。
+- 完成初始弱监督变化标签构建。
+- 完成 ESA WorldCover 2021 对齐与多源一致性辅助分析。
+- 完成高置信变化、高置信未变化、低置信样本分层。
+- 完成湿地 train/val/test 切片与统计。
+- 完成数据质量验收表，结论为数据可支撑弱监督标签构建、伪变化分析、湿地场景实验和跨区域泛化验证。
 
-## 2. Baseline 实验结果
+### 公开数据
 
-当前已完成 `Siamese UNet` 基线实验，主要结果来自以下训练设置：
+- SECOND 已完成统一读取接口验证：
+  - train: 2553
+  - val: 415
+  - test: 1694
+- HRSCD small sample 已替换为 HRSCD balanced sample：
+  - train: 220，其中变化 patch 110
+  - val: 40，其中变化 patch 20
+  - test: 40，其中变化 patch 20
+- HRSCD balanced sample 已通过统一 reader 和 single-batch smoke test。
 
-- `Weighted BCE + Dice`
-- `20 epoch`
-- 本地 GPU 调试完成
+### 训练框架
 
-关键指标：
+- 已建立统一训练框架：
+  - 数据读取
+  - 输入尺寸
+  - 训练轮数
+  - 学习率策略
+  - 指标计算
+  - 结果保存格式
+- 已实现 Siamese U-Net baseline。
+- 已完成本机工作流检查：
+  - 数据读取检查
+  - single-batch smoke test
+  - 代码跑通验证
+  - 可视化脚本调试
+  - 小 epoch 试训
+  - 文档、表格、结果汇总
 
-| 指标 | 数值 |
-| --- | ---: |
-| Train F1 | `0.239` |
-| Train IoU | `0.149` |
-| Val F1 | `0.054` |
-| Val IoU | `0.030` |
-| Test F1 | `0.257` |
-| Test IoU | `0.162` |
+## 当前实验状态
 
-### 结果说明
+### 本机
 
-- 现有结果表明数据链路与训练链路已经打通
-- 传统 CNN 方法在湿地复杂场景下仍存在性能上限
-- 后续工作将围绕更强主干与语义增强机制展开
+本机定位为调试环境，当前已经完善：
 
-## 3. 阶段状态
+- 湿地、SECOND、HRSCD balanced sample 数据读取。
+- 湿地、SECOND、HRSCD single-batch smoke test。
+- 可视化脚本和结果表脚本。
+- 本机不建议承担正式长时间训练。
 
-当前已完成的工作包括：
+### 服务器
 
-- 数据集构建
-- baseline 跑通
-- 文献调研
-- 主模型候选筛选
+服务器已启动 SECOND + Siamese U-Net 正式 baseline：
 
-项目已由数据准备阶段转入主模型复现与方案筛选阶段。
+```text
+server: GPU3090NODE3
+repo: /tmp/hesimin/wetland-change-detection-thesis
+data: /tmp/hesimin/datasets/SECOND
+run: /tmp/hesimin/wetland-change-detection-thesis/runs/second_siamese_unet_formal
+```
 
-## 4. 后续工作安排
+最近一次检查状态：
 
-### 第一阶段：候选模型复现
+```text
+progress: 47 / 50 epochs
+best epoch: 15
+best val F1: 0.6850
+best val IoU: 0.5209
+```
 
-纳入首轮复现的模型包括：
+该结果尚未作为最终指标写入论文表格，需等待 50 epoch 完成并读取 `metrics.json`。
 
-1. `ChangeMamba`
-2. `ChangeViT`
-3. `MaskCD`
-4. `ChangeCLIP`
+## 下一步动作
 
-### 第二阶段：结构筛选与扩展
+1. 等待 SECOND + Siamese U-Net formal baseline 完成。
+2. 汇总正式 baseline 指标、训练曲线和预测可视化。
+3. 在 SECOND 上继续复现至少两个 baseline，优先考虑：
+   - `ChangeViT`
+   - `ChangeMamba` 或 `CDMamba`
+   - `MaskCD`
+   - `BAN`
+4. 将稳定 baseline 迁移到 HRSCD balanced / larger HRSCD。
+5. 将候选模型迁移到湿地弱监督数据。
+6. 根据湿地实验结果设计：
+   - 置信度加权或噪声鲁棒训练
+   - 伪变化抑制模块
+   - 边界与破碎斑块增强模块
 
-在主干模型比较基础上，进一步考察以下结构因素：
+## 阶段性结论
 
-- 是否采用 `Mamba` 主干
-- 是否采用 `Transformer` 主干
-- 是否引入 `Mask` 解码头
-- 是否引入 `CLIP / 文本语义` 模块
-
-### 第三阶段：实验体系完善
-
-后续实验内容包括：
-
-- 主对比实验
-- 消融实验
-- 泛化实验
-- 可视化分析
-
-## 5. 阶段性结论
-
-当前阶段已形成以下研究基础：
-
-- 数据集已经具备实验基础
-- 候选模型已经完成调研和筛选
-- 后续工作重点非常清晰
-
-当前阶段的主要任务为候选主模型的开源复现与第一轮对比实验。
+当前仓库已经完成从“数据准备”到“统一训练框架”和“服务器正式 baseline 启动”的过渡。下一阶段的核心任务是把 SECOND baseline 结果收口，并开始多模型复现与湿地迁移实验。

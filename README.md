@@ -1,103 +1,109 @@
-# 基于遥感影像的湿地变化检测模型研究
+# 面向弱监督标签与伪变化抑制的湿地遥感变化检测方法研究
 
-本仓库作为硕士毕业论文的主代码仓库，集中管理数据处理脚本、模型训练代码、实验配置与研究文档。当前版本已纳入数据预处理流程、baseline 训练代码以及主模型筛选所需的文献与实验说明。
+本仓库是硕士毕业论文的核心代码与实验管理仓库，统一管理湿地弱监督变化检测的数据构建、公开数据集读取、baseline 训练、模型复现、结果统计与论文支撑文档。
+
+当前论文方向已经从早期的单一 `Mamba-CLIP` 融合设想，调整为更贴合数据条件和论文问题链条的：
+
+> 面向弱监督标签与伪变化抑制的湿地遥感变化检测方法研究
 
 ## 研究问题
 
-本课题围绕湿地变化检测中的以下问题展开：
+本课题围绕湿地变化检测中的四个问题展开：
 
-- 高分辨率双时相遥感影像下的计算效率问题
-- 水位波动与季节变化引起的伪变化干扰
-- 复杂边界与破碎斑块区域的变化表征能力
-- 跨区域场景下的模型泛化能力
+- 土地覆盖产品差分推导标签不精确，需显式建模弱监督标签噪声。
+- 湿地季节性、水位波动、潮滩边界变化容易造成伪变化。
+- 湿地边界复杂、斑块破碎，常规变化检测模型容易漏检或边界粗糙。
+- 不同湖泊、河口、滨海湿地区域差异明显，需要验证跨区域泛化能力。
 
-当前纳入比较范围的技术路线包括：
+因此，本仓库不再以某一个预设主干为唯一目标，而是先建立统一数据和训练框架，再通过公开数据集、HRSCD 迁移和自建湿地弱监督数据逐步筛选主干模型与改进模块。
 
-- `Mamba / SSM`
-- `Transformer / ViT`
-- `Mask-based decoding`
-- `Vision-Language modeling`
-- `Foundation model adaptation`
+## 当前数据基础
+
+| 数据 | 角色 | 当前状态 |
+| --- | --- | --- |
+| 自建湿地数据 | 论文主实验数据 | 6 个研究区，Sentinel-2 2018/2022 + GLC_FCS30D + ESA WorldCover |
+| 弱监督标签 | 主线标签来源 | GLC_FCS30D 差分生成初始弱标签，已完成高低置信分层 |
+| ESA WorldCover | 多源一致性验证 | 已用于辅助置信度分析和数据验收 |
+| SECOND | 公开标准 benchmark | 已接入统一 dataloader，服务器正在跑 Siamese U-Net 正式 baseline |
+| HRSCD balanced sample | 本机迁移调试数据 | 已重抽样为 train 220、val 40、test 40，三组均含 50% 变化样本 |
+
+## 已完成
+
+截至当前阶段，已完成：
+
+1. 明确论文方向为弱监督标签、伪变化抑制、边界增强和跨区域泛化。
+2. 完成 6 个湿地研究区的数据源设计、切片和统计。
+3. 基于 GLC_FCS30D 构建初始弱监督变化标签。
+4. 引入 ESA WorldCover 进行多源一致性验证。
+5. 完成高置信变化、高置信未变化、低置信样本分层。
+6. 完成数据质量验收表，确认数据可支撑弱监督标签构建、伪变化分析、湿地实验和泛化验证。
+7. 建立统一训练框架，统一数据读取、训练轮数、输入尺寸、学习率策略、指标计算和结果保存格式。
+8. 完成本机环境检查：数据读取、single-batch smoke test、可视化脚本、小 epoch 试训和结果表流程。
+9. 扩大并重分层 HRSCD sample，解决原 val/test 空变化标签问题。
+10. 在服务器上启动 SECOND + Siamese U-Net 正式 baseline 训练。
 
 ## 代码结构
 
-- [scripts/data_preparation](./scripts/data_preparation)
-  - 数据下载、年度标签裁剪、变化标签构建与样本切片脚本
-- [src/wetland_cd/training](./src/wetland_cd/training)
-  - 当前训练代码，包括数据集读取、baseline 模型与训练入口
-- [configs](./configs)
-  - 数据集配置、提示词配置与实验相关参数文件
-- [experiments](./experiments)
-  - 本地与服务器端训练脚本
-- [docs](./docs)
-  - 文献调研、数据集说明、论文框架与阶段进展
-- [data](./data)
-  - 本地数据目录约定
-- [results](./results)
-  - 实验输出目录约定
+- [scripts/data_preparation](./scripts/data_preparation)：数据下载、标签构建、样本切片、HRSCD 抽样与重分层脚本。
+- [src/wetland_cd/training](./src/wetland_cd/training)：统一训练框架、dataloader、baseline 模型、损失函数、指标和训练入口。
+- [configs/training](./configs/training)：SECOND、HRSCD、湿地数据的统一训练配置。
+- [docs/dataset](./docs/dataset)：数据源、弱标签、置信样本、数据验收和公开数据集说明。
+- [docs/experiments](./docs/experiments)：本机检查、结果表和实验准备状态。
+- [docs/literature_review](./docs/literature_review)：公开模型调研与候选主干筛选。
+- [docs/thesis_framework](./docs/thesis_framework)：论文框架与技术路线。
+- [docs/progress](./docs/progress)：阶段进展与下一步工作。
 
-## 文档内容
+## 关键文档
 
-- [docs/literature_review/README.md](./docs/literature_review/README.md)
-  - 相关模型调研与分类整理
-- [docs/literature_review/open_source_shortlist.md](./docs/literature_review/open_source_shortlist.md)
-  - 公开代码可复现模型清单
-- [docs/dataset/README.md](./docs/dataset/README.md)
-  - 数据来源、标签构建与样本统计
-- [docs/thesis_framework/README.md](./docs/thesis_framework/README.md)
-  - 论文结构与技术路线
-- [docs/progress/README.md](./docs/progress/README.md)
-  - 阶段进展与实验情况
-- [docs/ROADMAP.md](./docs/ROADMAP.md)
-  - 研发路线与阶段任务
+- [数据质量验收](./docs/dataset/data_quality_acceptance.md)
+- [数据层状态](./docs/dataset/data_layer_status.md)
+- [弱监督标签置信度筛选](./docs/dataset/weak_label_confidence.md)
+- [HRSCD balanced sample](./docs/dataset/hrscd_balanced_sample.md)
+- [本机实验准备状态](./docs/experiments/local_workstation_check.md)
+- [统一训练框架说明](./src/wetland_cd/training/README.md)
+- [模型调研清单](./docs/literature_review/README.md)
+- [研发路线图](./docs/ROADMAP.md)
 
-## 当前进展
+## 当前实验状态
 
-截至当前阶段，已完成以下工作：
+本机已经完成调试职责，适合继续承担数据检查、快速 smoke test、可视化和脚本开发。
 
-1. 基于 `GLC_FCS30D` 与 `Sentinel-2` 构建湿地变化检测数据集
-2. 完成 6 个典型湿地区域的双时相样本整理与标签生成
-3. 完成训练样本切片及 `train / val / test` 划分
-4. 跑通 `Siamese UNet` baseline，建立训练、验证与测试流程
-5. 完成相关模型调研，并形成开源可复现候选清单
+正式 baseline 与后续模型复现建议放到学校服务器完成。当前服务器实验：
 
-当前工作内容已由数据准备转入候选主模型复现与比较实验。
+```text
+SECOND + Siamese U-Net formal baseline
+run_dir: /tmp/hesimin/wetland-change-detection-thesis/runs/second_siamese_unet_formal
+status: running, 47/50 epochs at last check
+best val F1: 0.6850 at epoch 15
+```
 
-## 候选模型
+服务器结果文件包括：
 
-现阶段重点关注的开源模型包括：
+```text
+metrics.json
+history.csv
+history.jsonl
+checkpoints/best.pt
+checkpoints/last.pt
+train.log
+```
 
-- `ChangeMamba`
-- `ChangeViT`
-- `MaskCD`
-- `ChangeCLIP`
-- `BAN`
+## 下一步
 
-上述模型分别对应状态空间建模、Transformer 主干、对象级解码、语义引导和基础模型适配等技术方向。
+1. 等待 SECOND + Siamese U-Net 正式 baseline 跑完，整理正式指标表和训练曲线。
+2. 在 SECOND 上继续复现 2-3 个 baseline，例如 ChangeViT、ChangeMamba/CDMamba、MaskCD 或 BAN。
+3. 将表现稳定的模型迁移到 HRSCD balanced / larger HRSCD，检查复杂场景适应性。
+4. 将候选模型迁移到自建湿地弱监督数据，重点分析高低置信样本、伪变化区域、边界和破碎斑块。
+5. 在主干确定后设计弱标签噪声鲁棒训练、伪变化抑制和边界增强模块，并开展消融实验。
 
 ## 数据与版本管理说明
 
-由于原始遥感影像、切片样本与训练权重体量较大，当前仓库不直接托管以下内容：
+仓库不直接托管原始遥感影像、大规模 patch、完整公开数据集和模型权重。仓库主要保留：
 
-- 原始影像与年度全量标签
-- 大规模 patch 样本
-- 训练中间结果与模型权重
+- 数据处理与抽样脚本
+- 统一训练代码
+- 实验配置
+- 指标统计与可视化脚本
+- 论文支撑文档
 
-仓库当前纳入的是：
-
-- 核心数据处理脚本
-- baseline 训练代码
-- 实验配置文件
-- 研究文档与示意图
-
-后续主模型代码与实验脚本将在本仓库中持续补充和维护。
-
-## 研究区域示意
-
-杭州西溪湿地变化示意：
-
-![hangzhou_xixi_change](./assets/previews/hangzhou_xixi_change_final.png)
-
-鄱阳湖变化示意：
-
-![poyang_lake_change](./assets/previews/poyang_lake_change_final.png)
+大体量数据和训练结果保存在本机或服务器对应数据目录中。
