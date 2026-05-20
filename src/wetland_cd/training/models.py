@@ -190,8 +190,143 @@ class ChangeFormer(nn.Module):
         return self.decoder(diffs, output_size)
 
 
+class LayerNorm2d(nn.Module):
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.norm = nn.LayerNorm(channels)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.permute(0, 2, 3, 1)
+        x = self.norm(x)
+        return x.permute(0, 3, 1, 2)
+
+
+class DirectionalScan2d(nn.Module):
+    """CUDA-free 2D scan used for the compact ChangeMamba-style baseline."""
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        width_steps = torch.arange(1, x.shape[-1] + 1, device=x.device, dtype=x.dtype).view(1, 1, 1, -1)
+        height_steps = torch.arange(1, x.shape[-2] + 1, device=x.device, dtype=x.dtype).view(1, 1, -1, 1)
+
+        left_to_right = torch.cumsum(x, dim=-1) / width_steps
+        right_to_left = torch.flip(torch.cumsum(torch.flip(x, dims=[-1]), dim=-1), dims=[-1]) / torch.flip(
+            width_steps, dims=[-1]
+        )
+        top_to_bottom = torch.cumsum(x, dim=-2) / height_steps
+        bottom_to_top = torch.flip(torch.cumsum(torch.flip(x, dims=[-2]), dim=-2), dims=[-2]) / torch.flip(
+            height_steps, dims=[-2]
+        )
+        return 0.25 * (left_to_right + right_to_left + top_to_bottom + bottom_to_top)
+
+
+class ChangeMambaBlock(nn.Module):
+    def __init__(self, channels: int, expand_ratio: float = 2.0) -> None:
+        super().__init__()
+        hidden_channels = int(channels * expand_ratio)
+        self.norm = LayerNorm2d(channels)
+        self.in_proj = nn.Conv2d(channels, hidden_channels * 2, kernel_size=1)
+        self.dwconv = nn.Conv2d(
+            hidden_channels,
+            hidden_channels,
+            kernel_size=3,
+            padding=1,
+            groups=hidden_channels,
+        )
+        self.scan = DirectionalScan2d()
+        self.out_proj = nn.Conv2d(hidden_channels, channels, kernel_size=1)
+        self.scale = nn.Parameter(torch.ones(1, channels, 1, 1) * 1e-2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        residual = x
+        content, gate = self.in_proj(self.norm(x)).chunk(2, dim=1)
+        content = self.dwconv(content)
+        content = self.scan(F.silu(content))
+        x = self.out_proj(content * F.silu(gate))
+        return residual + x * self.scale
+
+
+class ChangeMambaStage(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, stride: int, depth: int, expand_ratio: float) -> None:
+        super().__init__()
+        self.patch = PatchEmbed(in_channels, out_channels, stride=stride)
+        self.blocks = nn.Sequential(
+            *[ChangeMambaBlock(out_channels, expand_ratio=expand_ratio) for _ in range(depth)]
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.blocks(self.patch(x))
+
+
+class ChangeMambaEncoder(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        embed_dims: tuple[int, int, int, int],
+        depths: tuple[int, int, int, int],
+        expand_ratio: float,
+    ) -> None:
+        super().__init__()
+        self.stage1 = ChangeMambaStage(in_channels, embed_dims[0], stride=4, depth=depths[0], expand_ratio=expand_ratio)
+        self.stage2 = ChangeMambaStage(embed_dims[0], embed_dims[1], stride=2, depth=depths[1], expand_ratio=expand_ratio)
+        self.stage3 = ChangeMambaStage(embed_dims[1], embed_dims[2], stride=2, depth=depths[2], expand_ratio=expand_ratio)
+        self.stage4 = ChangeMambaStage(embed_dims[2], embed_dims[3], stride=2, depth=depths[3], expand_ratio=expand_ratio)
+
+    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
+        f1 = self.stage1(x)
+        f2 = self.stage2(f1)
+        f3 = self.stage3(f2)
+        f4 = self.stage4(f3)
+        return [f1, f2, f3, f4]
+
+
+class TemporalMambaFusion(nn.Module):
+    def __init__(self, channels: int, expand_ratio: float) -> None:
+        super().__init__()
+        self.block = ChangeMambaBlock(channels * 3, expand_ratio=expand_ratio)
+        self.project = nn.Conv2d(channels * 3, channels, kernel_size=1)
+
+    def forward(self, f1: torch.Tensor, f2: torch.Tensor) -> torch.Tensor:
+        diff = torch.abs(f1 - f2)
+        fused = self.block(torch.cat([diff, f1 * f2, f2 - f1], dim=1))
+        return self.project(fused)
+
+
+class ChangeMamba(nn.Module):
+    """Compact ChangeMamba-style baseline without custom selective-scan kernels.
+
+    It follows the same comparison role as the local ChangeFormer baseline: a
+    shared Siamese encoder, multi-scale temporal interaction, and a lightweight
+    decoder. The scan block is intentionally CUDA-extension-free so it can run in
+    the unified training framework on the school server.
+    """
+
+    def __init__(
+        self,
+        in_channels: int = 3,
+        embed_dims: tuple[int, int, int, int] = (32, 64, 128, 256),
+        depths: tuple[int, int, int, int] = (1, 1, 2, 1),
+        expand_ratio: float = 2.0,
+        decoder_dim: int = 128,
+    ) -> None:
+        super().__init__()
+        self.encoder = ChangeMambaEncoder(in_channels, embed_dims, depths, expand_ratio)
+        self.temporal_fusion = nn.ModuleList(
+            [TemporalMambaFusion(dim, expand_ratio=expand_ratio) for dim in embed_dims]
+        )
+        self.decoder = ChangeFormerDecoder(embed_dims, decoder_dim)
+
+    def forward(self, t1: torch.Tensor, t2: torch.Tensor) -> torch.Tensor:
+        output_size = t1.shape[-2:]
+        feats1 = self.encoder(t1)
+        feats2 = self.encoder(t2)
+        diffs = [fusion(f1, f2) for fusion, f1, f2 in zip(self.temporal_fusion, feats1, feats2)]
+        return self.decoder(diffs, output_size)
+
+
 MODEL_REGISTRY = {
     "changeformer": ChangeFormer,
+    "changemamba": ChangeMamba,
+    "change_mamba": ChangeMamba,
     "siamese_unet": SiameseUNet,
 }
 

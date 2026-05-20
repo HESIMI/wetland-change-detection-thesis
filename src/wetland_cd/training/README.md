@@ -75,6 +75,13 @@ python src/wetland_cd/training/train.py `
   --config configs/training/second_changeformer.json
 ```
 
+ChangeMamba-style baseline on SECOND:
+
+```powershell
+python src/wetland_cd/training/train.py `
+  --config configs/training/second_changemamba.json
+```
+
 ## Adding A Model
 
 1. Implement the model in `models.py` or import it there.
