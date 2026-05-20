@@ -1,5 +1,5 @@
 {
-  "experiment_name": "second_changemamba",
+  "experiment_name": "second_changemamba_lite",
   "seed": 42,
   "data": {
     "dataset": "second",
@@ -7,7 +7,7 @@
     "image_size": 256
   },
   "model": {
-    "name": "changemamba",
+    "name": "changemamba_lite",
     "params": {
       "embed_dims": [32, 64, 128, 256],
       "depths": [1, 1, 2, 1],
@@ -41,6 +41,6 @@
     }
   },
   "results": {
-    "out_dir": "runs/second_changemamba"
+    "out_dir": "runs/second_changemamba_lite"
   }
 }

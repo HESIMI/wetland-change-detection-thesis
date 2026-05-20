@@ -291,13 +291,13 @@ class TemporalMambaFusion(nn.Module):
         return self.project(fused)
 
 
-class ChangeMamba(nn.Module):
-    """Compact ChangeMamba-style baseline without custom selective-scan kernels.
+class ChangeMambaLite(nn.Module):
+    """Compact ChangeMamba-style exploratory model without official kernels.
 
     It follows the same comparison role as the local ChangeFormer baseline: a
     shared Siamese encoder, multi-scale temporal interaction, and a lightweight
-    decoder. The scan block is intentionally CUDA-extension-free so it can run in
-    the unified training framework on the school server.
+    decoder. This is not the official ChangeMamba implementation; official
+    reproduction should use ChenHongruixuan/ChangeMamba and MambaSCD/MambaBCD.
     """
 
     def __init__(
@@ -325,8 +325,8 @@ class ChangeMamba(nn.Module):
 
 MODEL_REGISTRY = {
     "changeformer": ChangeFormer,
-    "changemamba": ChangeMamba,
-    "change_mamba": ChangeMamba,
+    "changemamba_lite": ChangeMambaLite,
+    "change_mamba_lite": ChangeMambaLite,
     "siamese_unet": SiameseUNet,
 }
 

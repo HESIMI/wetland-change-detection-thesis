@@ -75,12 +75,17 @@ python src/wetland_cd/training/train.py `
   --config configs/training/second_changeformer.json
 ```
 
-ChangeMamba-style baseline on SECOND:
+ChangeMamba-lite exploratory model on SECOND:
 
 ```powershell
 python src/wetland_cd/training/train.py `
-  --config configs/training/second_changemamba.json
+  --config configs/training/second_changemamba_lite.json
 ```
+
+This local `ChangeMamba-lite` entry is not the official ChangeMamba
+reproduction. The official baseline should be run from
+`ChenHongruixuan/ChangeMamba` with `MambaSCD` or `MambaBCD` and the official
+`selective_scan` kernels.
 
 ## Adding A Model
 
