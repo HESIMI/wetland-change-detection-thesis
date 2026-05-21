@@ -90,16 +90,50 @@ def normalize_label(src: Path, dst: Path) -> dict[str, float | int]:
     }
 
 
-def copy_sample(sample: Sample, split_dir: Path) -> dict[str, float | int]:
+def save_binary_mask(mask: np.ndarray, dst: Path) -> dict[str, float | int]:
+    out = (mask > 0).astype(np.uint8) * 255
+    Image.fromarray(out).save(dst)
+    changed = int((out > 0).sum())
+    total = int(out.size)
+    return {
+        "changed_pixels": changed,
+        "total_pixels": total,
+        "change_ratio": changed / total if total else 0.0,
+        "is_empty": int(changed == 0),
+    }
+
+
+def copy_sample(sample: Sample, split_dir: Path, patch_size: int) -> list[dict[str, str | float | int]]:
     a_dst = split_dir / "A" / f"{sample.sample_id}.png"
     b_dst = split_dir / "B" / f"{sample.sample_id}.png"
     label_dst = split_dir / "label" / f"{sample.sample_id}.png"
     a_dst.parent.mkdir(parents=True, exist_ok=True)
     b_dst.parent.mkdir(parents=True, exist_ok=True)
     label_dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(sample.a, a_dst)
-    shutil.copy2(sample.b, b_dst)
-    return normalize_label(sample.label, label_dst)
+    if patch_size <= 0:
+        shutil.copy2(sample.a, a_dst)
+        shutil.copy2(sample.b, b_dst)
+        return [{"sample_id": sample.sample_id, **normalize_label(sample.label, label_dst)}]
+
+    a_img = Image.open(sample.a).convert("RGB")
+    b_img = Image.open(sample.b).convert("RGB")
+    label_arr = np.asarray(Image.open(sample.label))
+    if label_arr.ndim == 3:
+        label_arr = label_arr[..., 0]
+    width, height = a_img.size
+    rows = []
+    for y0 in range(0, height, patch_size):
+        for x0 in range(0, width, patch_size):
+            x1 = min(x0 + patch_size, width)
+            y1 = min(y0 + patch_size, height)
+            if x1 - x0 != patch_size or y1 - y0 != patch_size:
+                continue
+            patch_id = f"{sample.sample_id}_{y0:04d}_{x0:04d}"
+            a_img.crop((x0, y0, x1, y1)).save(split_dir / "A" / f"{patch_id}.png")
+            b_img.crop((x0, y0, x1, y1)).save(split_dir / "B" / f"{patch_id}.png")
+            stats = save_binary_mask(label_arr[y0:y1, x0:x1], split_dir / "label" / f"{patch_id}.png")
+            rows.append({"sample_id": patch_id, "source_id": sample.sample_id, **stats})
+    return rows
 
 
 def ensure_split_dirs(dataset_out: Path) -> None:
@@ -145,6 +179,7 @@ def organize_dataset(
     val_ratio: float,
     test_ratio: float,
     split_from_dirs: bool,
+    patch_size: int,
 ) -> dict[str, object]:
     dataset_out = out_root / name
     if dataset_out.exists():
@@ -164,8 +199,8 @@ def organize_dataset(
     rows: list[dict[str, str | int | float]] = []
     for split, samples in samples_by_split.items():
         for sample in samples:
-            stats = copy_sample(sample, dataset_out / split)
-            rows.append({"dataset": name, "split": split, "sample_id": sample.sample_id, **stats})
+            for stats in copy_sample(sample, dataset_out / split, patch_size=patch_size):
+                rows.append({"dataset": name, "split": split, **stats})
 
     summary = summarize(rows)
     with (dataset_out / "manifest.csv").open("w", encoding="utf-8-sig", newline="") as f:
@@ -184,6 +219,7 @@ def main() -> None:
     parser.add_argument("--val-ratio", type=float, default=0.1)
     parser.add_argument("--test-ratio", type=float, default=0.1)
     parser.add_argument("--extract-zip", action="store_true")
+    parser.add_argument("--patch-size", type=int, default=256, help="Set <=0 to keep original image size.")
     args = parser.parse_args()
 
     out_root = args.public_root / "datasets"
@@ -201,6 +237,7 @@ def main() -> None:
                 val_ratio=args.val_ratio,
                 test_ratio=args.test_ratio,
                 split_from_dirs=True,
+                patch_size=args.patch_size,
             )
         )
     print(json.dumps(results, ensure_ascii=False, indent=2))

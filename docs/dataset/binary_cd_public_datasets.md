@@ -54,7 +54,8 @@ D:\桌面\文献\论文\公开数据集\datasets
 python scripts\data_preparation\organize_binary_cd_datasets.py `
   --public-root D:\桌面\文献\论文\公开数据集 `
   --dataset all `
-  --extract-zip
+  --extract-zip `
+  --patch-size 256
 ```
 
 The script creates:
