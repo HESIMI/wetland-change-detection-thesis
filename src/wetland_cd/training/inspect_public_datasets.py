@@ -34,7 +34,7 @@ def inspect_dataset(dataset: str, root: Path, split: str, batch_size: int) -> No
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Inspect public semantic change detection datasets.")
-    parser.add_argument("--dataset", choices=["second", "hrscd"], required=True)
+    parser.add_argument("--dataset", choices=["second", "hrscd", "levir-cd", "whu-cd", "sysu-cd"], required=True)
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--split", choices=["train", "val", "test"], default="train")
     parser.add_argument("--batch-size", type=int, default=2)
@@ -45,4 +45,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

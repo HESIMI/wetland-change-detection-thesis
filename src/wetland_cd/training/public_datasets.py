@@ -79,7 +79,7 @@ class PublicSemanticChangeDataset(Dataset):
 
     def __init__(
         self,
-        dataset: Literal["second", "hrscd"],
+    dataset: Literal["second", "hrscd", "levir-cd", "whu-cd", "sysu-cd"],
         root: str | Path,
         split: Split,
         image_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
@@ -97,6 +97,8 @@ class PublicSemanticChangeDataset(Dataset):
             self.samples = _build_second_samples(self.root, split)
         elif self.dataset == "hrscd":
             self.samples = _build_hrscd_samples(self.root, split)
+        elif self.dataset in {"levir-cd", "whu-cd", "sysu-cd"}:
+            self.samples = _build_binary_cd_samples(self.root, self.dataset, split)
         else:
             raise ValueError(f"Unsupported dataset: {dataset}")
 
@@ -250,6 +252,44 @@ def _resolve_hrscd_base(root: Path) -> Path:
         if candidate.exists():
             return candidate
     raise FileNotFoundError(f"Cannot find HRSCD root under {root}")
+
+
+def _build_binary_cd_samples(root: Path, dataset: str, split: Split) -> list[PublicChangeSample]:
+    base = _resolve_binary_cd_base(root, dataset)
+    split_base = base / split
+    if not split_base.exists():
+        raise FileNotFoundError(f"Cannot find split={split} under {base}")
+    t1_dir = _find_first_dir(split_base, ["A", "a", "im1", "image1", "T1", "t1"])
+    t2_dir = _find_first_dir(split_base, ["B", "b", "im2", "image2", "T2", "t2"])
+    binary_dir = _find_first_dir(split_base, ["label", "labels", "mask", "masks", "change", "change_label"])
+    stems = _common_stems(t1_dir, t2_dir, binary_dir)
+    return [
+        PublicChangeSample(
+            sample_id=stem,
+            t1_path=_find_file(t1_dir, stem),
+            t2_path=_find_file(t2_dir, stem),
+            label1_path=None,
+            label2_path=None,
+            binary_path=_find_file(binary_dir, stem),
+            split=split,
+        )
+        for stem in stems
+    ]
+
+
+def _resolve_binary_cd_base(root: Path, dataset: str) -> Path:
+    candidates = [
+        root,
+        root / dataset,
+        root / dataset.upper(),
+        root / dataset.replace("-", "_"),
+        root / "datasets" / dataset,
+        root / "datasets" / dataset.upper(),
+    ]
+    for candidate in candidates:
+        if all((candidate / split).exists() for split in ["train", "val", "test"]):
+            return candidate
+    raise FileNotFoundError(f"Cannot find normalized {dataset} train/val/test under {root}")
 
 
 def _find_split_base(root: Path, split: Split) -> Path:

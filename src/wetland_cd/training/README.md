@@ -68,6 +68,16 @@ python src/wetland_cd/training/train.py `
   --config configs/training/hrscd_sample_siamese_unet.json
 ```
 
+Normalized binary CD datasets such as LEVIR-CD, WHU-CD, and SYSU-CD:
+
+```powershell
+python src/wetland_cd/training/train.py `
+  --config configs/training/second_siamese_unet.json `
+  --dataset levir-cd `
+  --root D:\桌面\文献\论文\公开数据集\datasets `
+  --image-size 256
+```
+
 ChangeFormer baseline on SECOND:
 
 ```powershell

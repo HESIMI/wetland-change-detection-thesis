@@ -42,7 +42,7 @@ def build_datasets_from_config(config: dict[str, Any]) -> dict[str, object]:
             for split in SPLITS
         }
 
-    if dataset_name in {"second", "hrscd"}:
+    if dataset_name in {"second", "hrscd", "levir-cd", "whu-cd", "sysu-cd"}:
         try:
             from .public_datasets import PublicSemanticChangeDataset
         except ImportError:

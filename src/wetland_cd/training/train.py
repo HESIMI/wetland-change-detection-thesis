@@ -381,7 +381,11 @@ def train_from_config(config: dict[str, Any]) -> dict[str, Any]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Unified binary change detection training entrypoint.")
     parser.add_argument("--config", type=Path, default=Path("configs/training/wetland_siamese_unet.json"))
-    parser.add_argument("--dataset", choices=["wetland", "second", "hrscd"], default=None)
+    parser.add_argument(
+        "--dataset",
+        choices=["wetland", "second", "hrscd", "levir-cd", "whu-cd", "sysu-cd"],
+        default=None,
+    )
     parser.add_argument("--manifest", type=Path, default=None, help="Wetland dataset manifest override.")
     parser.add_argument("--root", type=Path, default=None, help="Public dataset root override.")
     parser.add_argument("--model", type=str, default=None)
