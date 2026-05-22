@@ -9,12 +9,12 @@ from .change_feature_adapter import ChangeFeatureAdapter
 
 
 class CDMambaMaskCD(nn.Module):
-    """Mamba-driven object-level change reasoning prototype.
+    """MaskCD-dominant Mamba-enhanced object-level change detector.
 
-    This first version keeps the unified repository self-contained: the
-    ChangeMamba-style encoder supplies global-local bi-temporal features, while a
-    MaskCD-style query decoder predicts object-level change masks and folds them
-    back into a binary change map.
+    Mini validation showed MaskCD gives the stronger LEVIR-CD signal, so this
+    model treats mask reasoning as the primary branch. The CDMamba-style encoder
+    supplies global-local change features and an auxiliary pixel head stabilizes
+    early training.
     """
 
     def __init__(
@@ -27,8 +27,13 @@ class CDMambaMaskCD(nn.Module):
         num_queries: int = 64,
         num_heads: int = 8,
         decoder_depth: int = 2,
+        query_selection: str = "topk",
+        mask_logit_weight: float = 0.7,
+        pixel_logit_weight: float = 0.3,
     ) -> None:
         super().__init__()
+        self.mask_logit_weight = float(mask_logit_weight)
+        self.pixel_logit_weight = float(pixel_logit_weight)
         self.encoder = ChangeMambaEncoder(in_channels, embed_dims, depths, expand_ratio)
         self.temporal_fusion = nn.ModuleList(
             [TemporalMambaFusion(dim, expand_ratio=expand_ratio) for dim in embed_dims]
@@ -41,10 +46,18 @@ class CDMambaMaskCD(nn.Module):
             nn.BatchNorm2d(query_dim),
             nn.GELU(),
         )
-        self.query_generator = ChangeAwareMaskQueryGenerator(embed_dims[-1], query_dim, num_queries)
+        self.query_generator = ChangeAwareMaskQueryGenerator(
+            embed_dims[-1],
+            query_dim,
+            num_queries,
+            selection=query_selection,
+        )
         self.mask_decoder = BitemporalMaskInteractionDecoder(query_dim, num_heads=num_heads, depth=decoder_depth)
-        self.refine = nn.Sequential(
-            nn.Conv2d(1, 1, kernel_size=3, padding=1, bias=True),
+        self.pixel_head = nn.Sequential(
+            nn.Conv2d(query_dim, query_dim // 2, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(query_dim // 2),
+            nn.GELU(),
+            nn.Conv2d(query_dim // 2, 1, kernel_size=1),
         )
 
     def forward_masks(self, t1: torch.Tensor, t2: torch.Tensor) -> dict[str, torch.Tensor]:
@@ -58,18 +71,22 @@ class CDMambaMaskCD(nn.Module):
         mask_feature = self.mask_feature(diff_feature)
         queries = self.query_generator(diffs[-1])
         mask_logits, class_logits = self.mask_decoder(queries, t1_feature, t2_feature, diff_feature, mask_feature)
+        proposal_logits = mask_logits + class_logits.unsqueeze(-1).unsqueeze(-1)
+        mask_change_logits = torch.amax(proposal_logits, dim=1, keepdim=True)
+        pixel_logits = self.pixel_head(diff_feature)
         return {
             "mask_logits": mask_logits,
             "class_logits": class_logits,
+            "mask_change_logits": mask_change_logits,
+            "pixel_logits": pixel_logits,
             "mask_feature": mask_feature,
         }
 
     def forward(self, t1: torch.Tensor, t2: torch.Tensor) -> torch.Tensor:
         output_size = t1.shape[-2:]
         outputs = self.forward_masks(t1, t2)
-        mask_probs = torch.sigmoid(outputs["mask_logits"])
-        class_probs = torch.sigmoid(outputs["class_logits"]).unsqueeze(-1).unsqueeze(-1)
-        change_prob = 1.0 - torch.prod(1.0 - mask_probs * class_probs, dim=1, keepdim=True)
-        logits = torch.logit(change_prob.clamp(1e-4, 1.0 - 1e-4))
-        logits = self.refine(logits)
+        logits = (
+            self.mask_logit_weight * outputs["mask_change_logits"]
+            + self.pixel_logit_weight * outputs["pixel_logits"]
+        )
         return F.interpolate(logits, size=output_size, mode="bilinear", align_corners=False)

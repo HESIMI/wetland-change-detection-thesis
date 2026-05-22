@@ -26,7 +26,7 @@ Binary Change Map
 
 ### CDMamba-style Encoder
 
-第一版复用仓库内的 `ChangeMambaLite` 编码器组件，形成可直接训练的自包含原型。它承担两个职责：
+当前版本根据 LEVIR-CD mini baseline 判断进行了调整：MaskCD 在小样本上明显优于 CDMamba，因此融合模型不再让 CDMamba 主导最终输出，而是将其作为全局-局部变化特征增强器。第一版仍复用仓库内的 `ChangeMambaLite` 编码器组件，形成可直接训练的自包含原型。它承担两个职责：
 
 - 提取双时相影像的多尺度特征；
 - 通过 Mamba-style 全局扫描与局部卷积混合，生成变化敏感差异特征。
@@ -35,13 +35,27 @@ Binary Change Map
 
 ### Change-aware Mask Query Generator
 
-普通 MaskCD 主要依赖可学习 query。本原型改为从高层差异特征中生成 query，使 mask proposal 直接受变化区域驱动。
+普通 MaskCD 主要依赖可学习 query。本原型改为从高层差异特征中生成 query，使 mask proposal 直接受变化区域驱动。当前默认采用 top-k change response selection，而不是固定池化，以减少背景 token 对 mask proposal 的干扰。
 
 对应代码：
 
 ```text
 src/wetland_cd/training/ours/change_aware_query.py
 ```
+
+### MaskCD-dominant Output Fusion
+
+mini 结果显示 MaskCD 的目标级 mask reasoning 更适合 LEVIR-CD，因此当前输出融合采用：
+
+```text
+final_logits = 0.7 * object_mask_logits + 0.3 * auxiliary_pixel_logits
+```
+
+其中：
+
+- `object_mask_logits` 来自 mask proposal 与 changed / unchanged 分类；
+- `auxiliary_pixel_logits` 来自 CDMamba-style diff feature 的像素级辅助分支；
+- auxiliary pixel head 的作用是稳定早期训练，避免 mask proposal 召回不足。
 
 ### Bitemporal Mask Interaction Decoder
 

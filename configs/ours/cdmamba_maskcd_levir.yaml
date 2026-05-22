@@ -6,8 +6,9 @@ data:
 model:
   name: cdmamba_maskcd
   role: Mamba-driven object-level change reasoning
-  encoder: CDMamba-style global-local bitemporal encoder
-  decoder: MaskCD-style change-aware mask decoder
+  encoder: CDMamba-style global-local feature enhancer
+  decoder: MaskCD-dominant change-aware mask decoder
+  fusion: 0.7 * object_mask_logits + 0.3 * auxiliary_pixel_logits
 training:
   epochs: 100
   batch_size: 4

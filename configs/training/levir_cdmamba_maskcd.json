@@ -15,7 +15,10 @@
       "query_dim": 256,
       "num_queries": 64,
       "num_heads": 8,
-      "decoder_depth": 2
+      "decoder_depth": 2,
+      "query_selection": "topk",
+      "mask_logit_weight": 0.7,
+      "pixel_logit_weight": 0.3
     }
   },
   "training": {

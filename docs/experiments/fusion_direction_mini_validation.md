@@ -24,6 +24,7 @@ batch size：1
 |---|---:|---:|---:|---:|---:|---|
 | ChangeMambaLite | 1.597 -> 1.391 | 0.048 -> 0.385 | 0.060 | 0.100 | 0.053 | 学习更快，但可视化中容易出现大片误检 |
 | CDMamba-MaskCD | 1.561 -> 1.180 | 0.036 -> 0.318 | 0.050 | 0.016 | 0.008 | 预测更像局部目标级区域，但召回不足、验证波动较大 |
+| CDMamba-MaskCD, MaskCD-dominant | 1.673 -> 1.163 | 0.164 -> 0.276 | 0.055 | 0.181 | 0.099 | 相比第一版明显提升，但仍低于 MaskCD official mini |
 
 ## 判断
 
@@ -43,13 +44,24 @@ batch size：1
 - mask proposal 过早受阈值影响，容易出现召回不足；
 - 当前 loss 仍只监督最终二值图，没有直接约束 mask proposal 的目标完整性。
 
+## 已据此完成的代码调整
+
+根据 CDMamba 与 MaskCD 在 LEVIR-CD mini-result 上的对比，融合模型已调整为 MaskCD-dominant：
+
+- mask proposal 分支作为主输出；
+- CDMamba-style encoder 作为变化特征增强器；
+- query 生成由固定池化改为 top-k change response selection；
+- 新增 auxiliary pixel head；
+- 最终输出采用 `0.7 * object_mask_logits + 0.3 * auxiliary_pixel_logits`。
+
+调整后同等 mini 设置下，test F1 从 0.016 提升到 0.181，说明改动方向有效。但与 MaskCD official mini 的 test F1 0.756 相比，当前简化 decoder 仍有明显差距。
+
 ## 下一步修改建议
 
 1. 加入 mask sparsity / area regularization，抑制无效 proposal；
 2. 将 `MaskConsistencyLoss` 接入训练入口，减少内部空洞和碎片；
-3. 增加 auxiliary pixel head，让 early training 更稳定；
-4. 将 query 生成从固定池化升级为 top-k change attention selection；
-5. 正式训练时先用 LEVIR-CD 跑 50 到 100 epoch，再和 ChangeMambaLite、MaskCD official 对比。
+3. 正式训练时先用 LEVIR-CD 跑 50 到 100 epoch，再和 ChangeMambaLite、MaskCD official 对比；
+4. 若 MaskCD official 始终明显领先，则将融合模型定位为“MaskCD 的 CDMamba 特征增强版”，而不是完全独立范式替代。
 
 ## 当前结论
 
