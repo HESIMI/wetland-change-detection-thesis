@@ -131,3 +131,36 @@ main dataset. Their role is to check whether baseline model implementations can
 learn standard binary change detection under a unified dataloader, training
 schedule, metric code, and result format before being transferred to HRSCD,
 SECOND, and the wetland weak-supervision experiments.
+
+## CDMamba Official Layout
+
+The official CDMamba repository expects a flat dataset layout:
+
+```text
+<CDMAMBA_DATA_ROOT>/
+  A/
+  B/
+  label/
+  list/
+    train.txt
+    val.txt
+    test.txt
+```
+
+The normalized split layout can be converted with:
+
+```powershell
+python scripts\data_preparation\export_cdmamba_layout.py `
+  --src-root "$env:PUBLIC_DATA_ROOT\datasets\LEVIR-CD" `
+  --out-root "$env:PUBLIC_DATA_ROOT\cdmamba_format\LEVIR-CD" `
+  --mode hardlink
+
+python scripts\data_preparation\export_cdmamba_layout.py `
+  --src-root "$env:PUBLIC_DATA_ROOT\datasets\WHU-CD" `
+  --out-root "$env:PUBLIC_DATA_ROOT\cdmamba_format\WHU-CD" `
+  --mode hardlink
+```
+
+The exporter prefixes every filename with its split name before writing the
+flat CDMamba layout. This avoids filename collisions in datasets such as WHU-CD,
+where the official train and test tiles may share the same original names.
