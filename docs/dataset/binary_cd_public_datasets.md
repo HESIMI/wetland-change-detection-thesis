@@ -61,7 +61,7 @@ $env:PUBLIC_DATA_ROOT = "<local public dataset root>"
 |---|---|---:|---:|---:|---|
 | LEVIR-CD | HuggingFace mirror of official split archives | Done | Passed | Passed | Ready for local baseline checks |
 | SYSU-CD | HuggingFace `ericyu/SYSU_CD` parquet mirror | Done | Passed | Passed | Ready for local baseline checks |
-| WHU-CD | Official WHU archive | Blocked | Not run | Not run | Official download reset before completion; needs manual archive or authenticated mirror |
+| WHU-CD | Official WHU archive | Done | Passed | Passed | Ready for local baseline checks |
 
 ## Preparation Commands
 
@@ -84,6 +84,17 @@ python scripts\data_preparation\export_sysu_hf_parquet.py `
   --overwrite
 ```
 
+WHU-CD official archive can be exported with:
+
+```powershell
+python scripts\data_preparation\export_whu_cd_official.py `
+  --raw-root "$env:PUBLIC_DATA_ROOT\WHU-CD" `
+  --out-root "$env:PUBLIC_DATA_ROOT\datasets\WHU-CD" `
+  --patch-size 256 `
+  --val-ratio 0.1 `
+  --overwrite
+```
+
 The scripts create:
 
 - `manifest.csv`
@@ -100,6 +111,9 @@ The scripts create:
 | SYSU-CD | train | 12000 | 12000 | 0 | 0.2134 |
 | SYSU-CD | val | 4000 | 4000 | 0 | 0.2153 |
 | SYSU-CD | test | 4000 | 4000 | 0 | 0.2358 |
+| WHU-CD | train | 4504 | 3214 | 1290 | 0.0635 |
+| WHU-CD | val | 536 | 399 | 137 | 0.0708 |
+| WHU-CD | test | 2760 | 1852 | 908 | 0.0511 |
 
 ## Input Settings
 
