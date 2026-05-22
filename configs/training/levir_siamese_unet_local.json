@@ -1,0 +1,43 @@
+{
+  "experiment_name": "levir_siamese_unet_local",
+  "seed": 42,
+  "data": {
+    "dataset": "levir-cd",
+    "root": "D:/桌面/文献/论文/公开数据集/datasets",
+    "image_size": 256
+  },
+  "model": {
+    "name": "siamese_unet",
+    "params": {
+      "base_channels": 24
+    }
+  },
+  "training": {
+    "epochs": 20,
+    "batch_size": 1,
+    "num_workers": 0,
+    "pin_memory": true,
+    "drop_last": false,
+    "optimizer": "adamw",
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "scheduler": {
+      "name": "cosine",
+      "min_lr": 0.000001
+    },
+    "pos_weight": 2.0,
+    "dice_weight": 1.0,
+    "threshold": 0.5,
+    "monitor": "f1",
+    "monitor_mode": "max",
+    "device": "auto",
+    "limit_batches": {
+      "train": 0,
+      "val": 0,
+      "test": 0
+    }
+  },
+  "results": {
+    "out_dir": "runs/levir_siamese_unet_local"
+  }
+}

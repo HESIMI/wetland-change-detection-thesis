@@ -1,0 +1,46 @@
+{
+  "experiment_name": "whu_changemamba_lite_local",
+  "seed": 42,
+  "data": {
+    "dataset": "whu-cd",
+    "root": "D:/桌面/文献/论文/公开数据集/datasets",
+    "image_size": 256
+  },
+  "model": {
+    "name": "changemamba_lite",
+    "params": {
+      "embed_dims": [24, 48, 96, 192],
+      "depths": [1, 1, 2, 1],
+      "expand_ratio": 2.0,
+      "decoder_dim": 96
+    }
+  },
+  "training": {
+    "epochs": 20,
+    "batch_size": 1,
+    "num_workers": 0,
+    "pin_memory": true,
+    "drop_last": false,
+    "optimizer": "adamw",
+    "lr": 0.0001,
+    "weight_decay": 0.0001,
+    "scheduler": {
+      "name": "cosine",
+      "min_lr": 0.000001
+    },
+    "pos_weight": 2.0,
+    "dice_weight": 1.0,
+    "threshold": 0.5,
+    "monitor": "f1",
+    "monitor_mode": "max",
+    "device": "auto",
+    "limit_batches": {
+      "train": 0,
+      "val": 0,
+      "test": 0
+    }
+  },
+  "results": {
+    "out_dir": "runs/whu_changemamba_lite_local"
+  }
+}
