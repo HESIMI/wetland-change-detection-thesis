@@ -1,0 +1,16 @@
+experiment_name: levir_cdmamba_maskcd
+data:
+  dataset: levir-cd
+  root: D:/桌面/文献/论文/公开数据集/datasets
+  image_size: 256
+model:
+  name: cdmamba_maskcd
+  role: Mamba-driven object-level change reasoning
+  encoder: CDMamba-style global-local bitemporal encoder
+  decoder: MaskCD-style change-aware mask decoder
+training:
+  epochs: 100
+  batch_size: 4
+  lr: 0.0001
+  scheduler: cosine
+  metrics: [precision, recall, f1, iou, accuracy]
