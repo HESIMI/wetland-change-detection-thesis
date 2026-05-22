@@ -323,7 +323,7 @@ class ChangeMambaLite(nn.Module):
         return self.decoder(diffs, output_size)
 
 
-from .ours import CDMambaMaskCD
+from .ours import CDMambaMaskCD, MaskCDStyle
 
 
 MODEL_REGISTRY = {
@@ -331,6 +331,7 @@ MODEL_REGISTRY = {
     "changeformer": ChangeFormer,
     "changemamba_lite": ChangeMambaLite,
     "change_mamba_lite": ChangeMambaLite,
+    "maskcd_style": MaskCDStyle,
     "siamese_unet": SiameseUNet,
 }
 
